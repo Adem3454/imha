@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="tr"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Bomba İmha</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0 auto;max-width:520px;padding:16px;background:#2b2f2a;color:#ece8d8;font:16px/1.45 Georgia,serif}
+h1{font-size:30px;margin:12px 0}
+h3{margin:14px 0 4px;font-size:16px}
+button,input{font:inherit}
+.b{background:#d9a441;color:#1d1d16;border:0;padding:12px 18px;border-radius:4px;font-weight:700;margin:4px 0}
+input{padding:11px;border-radius:4px;border:2px solid #6b7266;background:#1f221e;color:#fff;width:110px;text-transform:uppercase;font-size:20px;text-align:center}
+.card{background:#3a4038;border:2px solid #55604f;border-radius:4px;padding:14px;margin:12px 0}
+.man{background:#e9e2cc;color:#2a2a22;border-color:#bdb391}
+.man li{margin:6px 0}.man p{margin:6px 0}
+#top{display:flex;justify-content:space-between;align-items:center}
+#clock{font:700 44px ui-monospace,Menlo,Consolas,monospace;color:#ff6b2c;background:#15120e;padding:2px 14px;border-radius:4px}
+.ser{font:700 30px ui-monospace,Menlo,Consolas,monospace}
+.wire{display:block;width:100%;height:20px;border:0;border-radius:10px;margin:14px 0}
+.cut{opacity:.2}
+.big{width:130px;height:130px;border-radius:50%;border:6px solid #1d1d16;color:#fff;font-size:20px;font-weight:700;text-shadow:0 0 4px #000,0 1px 6px #000;touch-action:none;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
+.big.on{transform:scale(.94)}
+.k{font-size:32px;width:62px;height:62px;margin:4px;border-radius:4px;border:2px solid #1d1d16;background:#cfc8b0;color:#1d1d16}
+.k.on{background:#7bc47f}
+.end{font-size:20px;font-weight:700}
+.sym{font-size:22px;letter-spacing:.2em}
+</style></head><body><div id="app"></div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/peerjs/1.5.4/peerjs.min.js"></script>
+<script>
+const $=id=>document.getElementById(id);
+const COL={r:'#d63c3c',b:'#2f6fd6',y:'#e8c22e',w:'#f1efe6'};
+const SYM=[['★','☾','♠','♣','♥','♦'],['✿','☂','☎','✂','⚑','♫'],['☢','☯','✈','⚓','☠','✉']];
+const LAB=['İPTAL','TUT','BAS','DUR'];
+let peer,conn,host=false,S=null,recv=0,round=0;
+const rnd=n=>Math.floor(Math.random()*n);
+const pick=a=>a[rnd(a.length)];
+const shuffle=a=>a.map(x=>[Math.random(),x]).sort((p,q)=>p[0]-q[0]).map(p=>p[1]);
+const fmt=l=>{const s=Math.ceil(l/1000);return Math.floor(s/60)+':'+String(s%60).padStart(2,'0')};
+const left=()=>S.run?S.left-(Date.now()-recv):S.left;
+
+/* Çözüm kuralları: kılavuzdaki metinle birebir aynı olmalı */
+const wireSol=(w,odd)=>{const c=x=>w.filter(y=>y==x).length;
+ if(c('r')>1&&odd)return w.lastIndexOf('r');
+ if(w[3]=='y'&&!c('r'))return 0;
+ if(c('b')==1)return 0;
+ if(c('y')>1)return 3;
+ return 1};
+const btnSol=(b,d)=>(b.l=='İPTAL'||b.c=='r')?'tap':d;
+
+/* Bağlantı */
+function lobby(m){$('app').innerHTML=`<h1>Bomba İmha</h1><p>İki kişilik, uzaktan. Oyun sırasında sesli arama açık olsun.</p>
+<div class="card"><button class="b" onclick="mk()">Oda kur</button></div>
+<div class="card">Oda kodu <input id="code" maxlength="4"> <button class="b" onclick="jn()">Katıl</button></div><p>${m||''}</p>`}
+function hook(c){
+ c.on('data',d=>{if(d.s){S=d.s;recv=Date.now();draw()}if(d.a&&host)apply(d.a)});
+ c.on('close',()=>{$('app').innerHTML='<h1>Bağlantı koptu</h1><button class="b" onclick="location.reload()">Başa dön</button>'})}
+function mk(){
+ const code=Array.from({length:4},()=>pick('ABCDEFGHJKLMNPQRSTUVWXYZ23456789')).join('');
+ host=true;peer=new Peer('bmb-'+code);
+ peer.on('open',()=>$('app').innerHTML=`<h1>Bomba İmha</h1><div class="card">Oda kodu<div class="ser">${code}</div>Bu kodu arkadaşına gönder. Katılmasını bekliyorum.</div>`);
+ peer.on('connection',c=>{if(conn)return c.close();conn=c;hook(c);c.on('open',()=>{round=0;newRound()})});
+ peer.on('error',e=>e.type=='unavailable-id'?mk():lobby('Bağlantı hatası: '+e.type))}
+function jn(){
+ const code=$('code').value.trim().toUpperCase();if(code.length!=4)return;
+ host=false;peer=new Peer();
+ peer.on('open',()=>{conn=peer.connect('bmb-'+code,{reliable:true});hook(conn)});
+ peer.on('error',e=>lobby(e.type=='peer-unavailable'?'Oda bulunamadı. Kodu kontrol et.':'Bağlantı hatası: '+e.type))}
+
+/* Oyun mantığı (sadece oda sahibinde çalışır) */
+function newRound(){
+ round++;
+ const col=rnd(3),idx=shuffle([0,1,2,3,4,5]).slice(0,4).sort(),sol=idx.map(i=>SYM[col][i]),L='ABCDEFGHJKLMNPRSTUXYZ';
+ S={round,dc:round%2?'h':'g',ser:pick(L)+pick(L)+'-'+(1000+rnd(9000)),
+  w:Array.from({length:4},()=>pick('rbyw')),cut:[0,0,0,0],btn:{c:pick('rbyw'),l:pick(LAB)},
+  k:{show:shuffle(sol),sol,n:0},ok:{w:0,b:0,k:0},st:0,left:300000,run:1,res:''};
+ recv=Date.now();sync()}
+function sync(){conn.send({s:S});draw()}
+function act(a){host?apply(a):conn.send({a})}
+function apply(a){
+ if(!S.run)return;
+ S.left=Math.max(0,left());recv=Date.now();
+ const d=+S.ser.slice(-1),bad=()=>{if(++S.st>=3){S.run=0;S.res='boom'}};
+ if(a.t=='w'&&!S.cut[a.i]&&!S.ok.w){S.cut[a.i]=1;a.i==wireSol(S.w,d%2)?S.ok.w=1:bad()}
+ if(a.t=='b'&&!S.ok.b)a.v==btnSol(S.btn,d)?S.ok.b=1:bad();
+ if(a.t=='k'&&!S.ok.k){
+  if(S.k.show[a.i]==S.k.sol[S.k.n]){if(++S.k.n==4)S.ok.k=1}else{S.k.n=0;bad()}}
+ if(S.run&&S.ok.w&&S.ok.b&&S.ok.k){S.run=0;S.res='win'}
+ sync()}
+setInterval(()=>{if(!S)return;const l=left(),c=$('clock');
+ if(c)c.textContent=fmt(Math.max(0,l));
+ if(host&&S.run&&l<=0){S.run=0;S.left=0;S.res='boom';sync()}},200);
+
+/* Arayüz */
+function draw(){
+ const def=S.dc==(host?'h':'g');
+ let h=`<div id="top"><div>Tur ${S.round} · Hata: ${S.st}/3</div><div id="clock">${fmt(Math.max(0,left()))}</div></div>
+ <p>${def?'Bomba uzmanısın. Bombayı sen görüyorsun, arkadaşına tarif et.':'Kılavuzdasın. Bombayı göremezsin, arkadaşını kılavuzla yönlendir.'}</p>`;
+ if(!S.run)h+=`<div class="card end">${S.res=='win'?'Bomba etkisiz hale getirildi!':'Bomba patladı.'}</div>`+
+  (host?'<button class="b" onclick="newRound()">Yeni tur (roller değişir)</button>':'<p>Yeni turu oda sahibi başlatır.</p>');
+ $('app').innerHTML=h+(def?bomb():manual());
+ const bt=$('bt');if(bt){let t0=0;
+  bt.oncontextmenu=e=>e.preventDefault();
+  bt.onpointerdown=e=>{t0=Date.now();bt.setPointerCapture(e.pointerId);bt.classList.add('on')};
+  bt.onpointerup=bt.onpointercancel=()=>{if(!t0)return;const d=Date.now()-t0;t0=0;bt.classList.remove('on');
+   act({t:'b',v:d<500?'tap':Math.ceil(left()/1000)%10})}}}
+function bomb(){
+ const ck=x=>x?'✔ ':'';
+ return `<div class="card">Seri no<div class="ser">${S.ser}</div></div>
+ <div class="card">${ck(S.ok.w)}Kablolar (soldan sağa sırayla)`+S.w.map((c,i)=>`<button class="wire${S.cut[i]?' cut':''}" style="background:${COL[c]}" onclick="act({t:'w',i:${i}})"></button>`).join('')+`</div>
+ <div class="card">${ck(S.ok.b)}Düğme<br><button id="bt" class="big" style="background:${COL[S.btn.c]}">${S.btn.l}</button></div>
+ <div class="card">${ck(S.ok.k)}Semboller<br>`+S.k.show.map((s,i)=>`<button class="k${S.k.sol.slice(0,S.k.n).includes(s)?' on':''}" onclick="act({t:'k',i:${i}})">${s}</button>`).join('')+`</div>`}
+function manual(){
+ return `<div class="card man"><h3>Bomba imha kılavuzu</h3>
+ <p>Seri numarasını, kabloların renk sırasını, düğmenin rengi ile yazısını ve sembolleri arkadaşından iste.</p>
+ <h3>1. Kablolar</h3><p>4 kablo var. Kuralları sırayla dene, ilk uyan kural geçerli.</p><ol>
+ <li>Birden fazla kırmızı kablo var ve seri no son rakamı tekse: son kırmızı kabloyu kes.</li>
+ <li>Son kablo sarı ve hiç kırmızı kablo yoksa: ilk kabloyu kes.</li>
+ <li>Tam olarak bir mavi kablo varsa: ilk kabloyu kes.</li>
+ <li>Birden fazla sarı kablo varsa: son kabloyu kes.</li>
+ <li>Hiçbiri uymazsa: ikinci kabloyu kes.</li></ol>
+ <h3>2. Düğme</h3><ol>
+ <li>Yazı İPTAL ise: hızlıca bas ve bırak (yarım saniyeden kısa).</li>
+ <li>Düğme kırmızıysa: hızlıca bas ve bırak.</li>
+ <li>Diğer durumlarda: basılı tut. Sayaçtaki saniyenin son hanesi seri no son rakamına eşit olduğunda bırak. Örnek: seri no 5 ile bitiyorsa 2:35, 2:25 gibi anlarda bırak.</li></ol>
+ <h3>3. Semboller</h3><p>Bombadaki 4 sembol aşağıdaki satırlardan yalnızca birinde bulunur. O satırı bul, sembollere o satırdaki soldan sağa sırayla bastır.</p>
+ ${SYM.map(c=>`<div class="sym">${c.join(' ')}</div>`).join('')}</div>`}
+lobby();
+</script></body></html>
