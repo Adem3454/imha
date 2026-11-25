@@ -24,7 +24,34 @@ input{padding:11px;border-radius:4px;border:2px solid #6b7266;background:#1f221e
 .k.on{background:#7bc47f}
 .end{font-size:20px;font-weight:700}
 .sym{font-size:22px;letter-spacing:.2em}
-</style></head><body><div id="app"></div>
+body{background:radial-gradient(ellipse at 50% 25%,#3d4638,#1a1d18 75%) fixed}
+#gl{position:fixed;inset:0;width:100%;height:100%;z-index:0;pointer-events:none}
+#app{position:relative;z-index:1}
+h1{font-size:36px;text-shadow:0 0 20px rgba(255,107,44,.55)}
+.card{background:rgba(44,50,42,.78);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);box-shadow:0 10px 24px rgba(0,0,0,.35)}
+.man{background:rgba(233,226,204,.96)}
+#clock{text-shadow:0 0 14px #ff6b2c;box-shadow:inset 0 0 12px #000}
+#clock.low{animation:blink 1s steps(2) infinite}
+.wire{background-image:linear-gradient(rgba(255,255,255,.55),rgba(255,255,255,0) 45%,rgba(0,0,0,.45));box-shadow:0 4px 6px rgba(0,0,0,.5)}
+.cut{opacity:.7;-webkit-mask-image:linear-gradient(90deg,#000 45%,transparent 45% 55%,#000 55%);mask-image:linear-gradient(90deg,#000 45%,transparent 45% 55%,#000 55%)}
+.big{background-image:radial-gradient(circle at 35% 30%,rgba(255,255,255,.6),rgba(255,255,255,0) 45%,rgba(0,0,0,.4));box-shadow:0 8px 0 #1d1d16,0 16px 20px rgba(0,0,0,.6);transition:transform .08s,box-shadow .08s}
+.big.on{transform:translateY(6px);box-shadow:0 2px 0 #1d1d16,0 4px 8px rgba(0,0,0,.6)}
+.k{box-shadow:0 4px 0 #8c846a}.k:active{transform:translateY(3px);box-shadow:0 1px 0 #8c846a}
+.k.on{background:#7bc47f;box-shadow:0 0 16px #7bc47f}
+#flash{position:fixed;inset:0;pointer-events:none;z-index:5}
+#flash.hit{animation:hit .6s ease-out}
+#flash.blast{animation:blast 1.6s ease-out forwards}
+#flash.won{animation:won 1.2s ease-out}
+.in{animation:drop .7s cubic-bezier(.2,.8,.2,1)}
+.sh{animation:sh .45s}
+@keyframes blink{50%{opacity:.35}}
+@keyframes hit{from{box-shadow:inset 0 0 140px 50px rgba(255,40,20,.75)}to{box-shadow:inset 0 0 0 0 rgba(255,40,20,0)}}
+@keyframes won{from{box-shadow:inset 0 0 160px 60px rgba(80,255,130,.6)}to{box-shadow:inset 0 0 0 0 rgba(80,255,130,0)}}
+@keyframes blast{0%{background:#fff}15%{background:#ff8c3a}100%{background:rgba(120,20,0,.45)}}
+@keyframes drop{from{opacity:0;transform:perspective(800px) rotateX(28deg) translateY(40px)}}
+@keyframes sh{20%{transform:translateX(-10px)}40%{transform:translateX(9px)}60%{transform:translateX(-6px)}80%{transform:translateX(4px)}}
+</style></head><body><div id="flash"></div><div id="app"></div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/peerjs/1.5.4/peerjs.min.js"></script>
 <script>
 const $=id=>document.getElementById(id);
@@ -72,7 +99,7 @@ function newRound(){
  const col=rnd(3),idx=shuffle([0,1,2,3,4,5]).slice(0,4).sort(),sol=idx.map(i=>SYM[col][i]),L='ABCDEFGHJKLMNPRSTUXYZ';
  S={round,dc:round%2?'h':'g',ser:pick(L)+pick(L)+'-'+(1000+rnd(9000)),
   w:Array.from({length:4},()=>pick('rbyw')),cut:[0,0,0,0],btn:{c:pick('rbyw'),l:pick(LAB)},
-  k:{show:shuffle(sol),sol,n:0},ok:{w:0,b:0,k:0},st:0,left:300000,run:1,res:''};
+  k:{show:shuffle(sol),sol,n:0},lp:Array.from({length:4},()=>rnd(2)),sw:[0,0,0,0],ok:{w:0,b:0,k:0,s:0},st:0,left:300000,run:1,res:''};
  recv=Date.now();sync()}
 function sync(){conn.send({s:S});draw()}
 function act(a){host?apply(a):conn.send({a})}
@@ -84,21 +111,24 @@ function apply(a){
  if(a.t=='b'&&!S.ok.b)a.v==btnSol(S.btn,d)?S.ok.b=1:bad();
  if(a.t=='k'&&!S.ok.k){
   if(S.k.show[a.i]==S.k.sol[S.k.n]){if(++S.k.n==4)S.ok.k=1}else{S.k.n=0;bad()}}
- if(S.run&&S.ok.w&&S.ok.b&&S.ok.k){S.run=0;S.res='win'}
+ if(a.t=='s'&&!S.ok.s)S.sw[a.i]^=1;
+ if(a.t=='sc'&&!S.ok.s)swSol(S.lp,d%2).join()==S.sw.join()?S.ok.s=1:bad();
+ if(S.run&&S.ok.w&&S.ok.b&&S.ok.k&&S.ok.s){S.run=0;S.res='win'}
  sync()}
 setInterval(()=>{if(!S)return;const l=left(),c=$('clock');
- if(c)c.textContent=fmt(Math.max(0,l));
+ if(c){c.textContent=fmt(Math.max(0,l));c.classList.toggle('low',!!S.run&&l<30000)}tickFx(l);
  if(host&&S.run&&l<=0){S.run=0;S.left=0;S.res='boom';sync()}},200);
 
 /* Arayüz */
 function draw(){
+ fx();
  const def=S.dc==(host?'h':'g');
  let h=`<div id="top"><div>Tur ${S.round} · Hata: ${S.st}/3</div><div id="clock">${fmt(Math.max(0,left()))}</div></div>
  <p>${def?'Bomba uzmanısın. Bombayı sen görüyorsun, arkadaşına tarif et.':'Kılavuzdasın. Bombayı göremezsin, arkadaşını kılavuzla yönlendir.'}</p>`;
  if(!S.run)h+=`<div class="card end">${S.res=='win'?'Bomba etkisiz hale getirildi!':'Bomba patladı.'}</div>`+
   (host?'<button class="b" onclick="newRound()">Yeni tur (roller değişir)</button>':'<p>Yeni turu oda sahibi başlatır.</p>');
  $('app').innerHTML=h+(def?bomb():manual());
- const bt=$('bt');if(bt){let t0=0;
+ stage();const bt=$('bt');if(bt){let t0=0;
   bt.oncontextmenu=e=>e.preventDefault();
   bt.onpointerdown=e=>{t0=Date.now();bt.setPointerCapture(e.pointerId);bt.classList.add('on')};
   bt.onpointerup=bt.onpointercancel=()=>{if(!t0)return;const d=Date.now()-t0;t0=0;bt.classList.remove('on');
@@ -106,8 +136,8 @@ function draw(){
 function bomb(){
  const ck=x=>x?'✔ ':'';
  return `<div class="card">Seri no<div class="ser">${S.ser}</div></div>
- <div class="card">${ck(S.ok.w)}Kablolar (soldan sağa sırayla)`+S.w.map((c,i)=>`<button class="wire${S.cut[i]?' cut':''}" style="background:${COL[c]}" onclick="act({t:'w',i:${i}})"></button>`).join('')+`</div>
- <div class="card">${ck(S.ok.b)}Düğme<br><button id="bt" class="big" style="background:${COL[S.btn.c]}">${S.btn.l}</button></div>
+ <div class="card">${ck(S.ok.w)}Kablolar (soldan sağa sırayla)`+S.w.map((c,i)=>`<button class="wire${S.cut[i]?' cut':''}" style="background-color:${COL[c]}" onclick="act({t:'w',i:${i}})"></button>`).join('')+`</div>
+ <div class="card">${ck(S.ok.b)}Düğme<br><button id="bt" class="big" style="background-color:${COL[S.btn.c]}">${S.btn.l}</button></div>
  <div class="card">${ck(S.ok.k)}Semboller<br>`+S.k.show.map((s,i)=>`<button class="k${S.k.sol.slice(0,S.k.n).includes(s)?' on':''}" onclick="act({t:'k',i:${i}})">${s}</button>`).join('')+`</div>`}
 function manual(){
  return `<div class="card man"><h3>Bomba imha kılavuzu</h3>
@@ -122,7 +152,113 @@ function manual(){
  <li>Yazı İPTAL ise: hızlıca bas ve bırak (yarım saniyeden kısa).</li>
  <li>Düğme kırmızıysa: hızlıca bas ve bırak.</li>
  <li>Diğer durumlarda: basılı tut. Sayaçtaki saniyenin son hanesi seri no son rakamına eşit olduğunda bırak. Örnek: seri no 5 ile bitiyorsa 2:35, 2:25 gibi anlarda bırak.</li></ol>
- <h3>3. Semboller</h3><p>Bombadaki 4 sembol aşağıdaki satırlardan yalnızca birinde bulunur. O satırı bul, sembollere o satırdaki soldan sağa sırayla bastır.</p>
+ <h3>3. Şalterler</h3><p>4 şalter ve üstlerinde 4 lamba var, şalterlerin hepsi aşağıda başlar. Her şalter kendisinin sağındaki lambaya bakar (4. şalter için 1. lamba). O lamba yanıyorsa şalter yukarıda, sönükse aşağıda olmalı. Seri no son rakamı tekse bütün sonuçları tersine çevir. Ayarlayınca ONAY tuşuna bas.</p><h3>4. Semboller</h3><p>Bombadaki 4 sembol aşağıdaki satırlardan yalnızca birinde bulunur. O satırı bul, sembollere o satırdaki soldan sağa sırayla bastır.</p>
  ${SYM.map(c=>`<div class="sym">${c.join(' ')}</div>`).join('')}</div>`}
+/* Ses */
+let ac;
+addEventListener('pointerdown',()=>{if(!ac)ac=new(window.AudioContext||window.webkitAudioContext)();if(ac.state=='suspended')ac.resume()});
+function snd(f,d,type,v,to){if(!ac)return;const t=ac.currentTime,o=ac.createOscillator(),g=ac.createGain();o.type=type||'square';o.frequency.setValueAtTime(f,t);if(to)o.frequency.exponentialRampToValueAtTime(to,t+d);g.gain.setValueAtTime(v||.08,t);g.gain.exponentialRampToValueAtTime(.001,t+d);o.connect(g);g.connect(ac.destination);o.start(t);o.stop(t+d)}
+function noise(d,v){if(!ac)return;const n=ac.sampleRate*d,b=ac.createBuffer(1,n,ac.sampleRate),a=b.getChannelData(0);for(let i=0;i<n;i++)a[i]=(Math.random()*2-1)*(1-i/n);const s=ac.createBufferSource(),g=ac.createGain();g.gain.value=v;s.buffer=b;s.connect(g);g.connect(ac.destination);s.start()}
+let ls=-1,P={};
+function tickFx(l){if(!S||!S.run)return;const s=Math.ceil(l/1000);if(s!=ls){ls=s;snd(s<=30?1300:900,.05,'square',.05);T&&T.pulse()}}
+const vib=p=>navigator.vibrate&&navigator.vibrate(p);
+function anim(c){const a=$('app');a.classList.remove('in','sh');void a.offsetWidth;a.classList.add(c)}
+function pop(c){const e=$('flash');e.className='';void e.offsetWidth;e.className=c}
+function fx(){
+ const c=S.cut.reduce((a,b)=>a+b)+S.sw.reduce((a,b)=>a+b),o=S.ok.w+S.ok.b+S.ok.k+S.ok.s;
+ if(P.r!=S.round){T&&T.reset();pop('');anim('in')}
+ else if(P.run&&!S.run){
+  if(S.res=='win'){[523,659,784,1047].forEach((f,i)=>setTimeout(()=>snd(f,.3,'sine',.12),i*120));T&&T.win();pop('won')}
+  else{noise(1.4,.5);snd(90,.9,'sawtooth',.3,30);vib([300,100,500]);T&&T.boom();pop('blast');anim('sh')}}
+ else if(S.st>P.st){snd(170,.45,'sawtooth',.14,70);vib(200);T&&T.strike();pop('hit');anim('sh')}
+ else if(c!=P.c)noise(.1,.25);
+ else if(o>P.o||S.k.n>P.n){snd(880,.12,'sine',.12);setTimeout(()=>snd(1320,.15,'sine',.1),90)}
+ P={r:S.round,run:S.run,st:S.st,c,o,n:S.k.n}}
+
+/* 3D bomba sahnesi (arka plan) */
+let T=null;
+function init3d(){
+ const r=new THREE.WebGLRenderer({alpha:true,antialias:true}),sc=new THREE.Scene(),cam=new THREE.PerspectiveCamera(45,1,.1,50),g=new THREE.Group(),bm=new THREE.Group();
+ r.setPixelRatio(Math.min(devicePixelRatio,2));r.domElement.id='gl';document.body.prepend(r.domElement);
+ sc.add(g);g.add(bm);
+ const M=(c,m,ro)=>new THREE.MeshStandardMaterial({color:c,metalness:m,roughness:ro}),dark=M(0x3a3f44,.6,.4);
+ const add=(geo,mat,x,y,z,rz)=>{const m=new THREE.Mesh(geo,mat);m.position.set(x||0,y||0,z||0);m.rotation.z=rz||0;bm.add(m);return m};
+ add(new THREE.SphereGeometry(1.7,48,32),dark);
+ add(new THREE.TorusGeometry(1.72,.09,12,64),M(0xd9a441,.5,.4)).rotation.x=Math.PI/2;
+ add(new THREE.CylinderGeometry(.35,.45,.4,20),dark,0,1.8);
+ add(new THREE.CylinderGeometry(.05,.05,.9,8),M(0xc9b88a,0,.9),.25,2.35,0,-.5);
+ sc.add(new THREE.HemisphereLight(0xbfc8d8,0x222018,.9));
+ const dl=new THREE.DirectionalLight(0xffffff,.8);dl.position.set(3,4,5);sc.add(dl);
+ const pl=new THREE.PointLight(0xff3b1f,1,12);pl.position.set(0,0,3.5);sc.add(pl);
+ const N=40,sp=new Float32Array(N*3),sv=[],spg=new THREE.BufferGeometry();
+ for(let i=0;i<N;i++)sv.push({l:Math.random(),x:0,y:0,z:0});
+ spg.setAttribute('position',new THREE.BufferAttribute(sp,3));
+ bm.add(new THREE.Points(spg,new THREE.PointsMaterial({size:.09,color:0xffb347,transparent:true,depthWrite:false,blending:THREE.AdditiveBlending})));
+ const NB=300,bp=new Float32Array(NB*3),bv=[],bg=new THREE.BufferGeometry();
+ for(let i=0;i<NB;i++)bv.push(new THREE.Vector3(Math.random()-.5,Math.random()-.5,Math.random()-.5).normalize().multiplyScalar(2+Math.random()*5));
+ bg.setAttribute('position',new THREE.BufferAttribute(bp,3));
+ const bmat=new THREE.PointsMaterial({size:.14,color:0xff8c3a,transparent:true,opacity:0,depthWrite:false,blending:THREE.AdditiveBlending});
+ sc.add(new THREE.Points(bg,bmat));
+ let shake=0,pulse=0,flash=0,bt=-1;
+ T={pulse(){pulse=1},strike(){shake=.6;flash=1},
+  boom(){bm.visible=false;bt=0;flash=3;bmat.opacity=1},
+  win(){dark.emissive.setHex(0x14803a);pl.color.setHex(0x3cff7a);flash=1.5},
+  reset(){bm.visible=true;bt=-1;bmat.opacity=0;dark.emissive.setHex(0);pl.color.setHex(0xff3b1f);flash=0}};
+ /* Etkileşimli 3D bomba paneli */
+ const panel=new THREE.Group();sc.add(panel);let pk=[],btn=null;
+ const tex=(t,w,h,fg,bg,fs)=>{const c=document.createElement('canvas');c.width=w;c.height=h;const x=c.getContext('2d');if(bg){x.fillStyle=bg;x.fillRect(0,0,w,h)}x.fillStyle=fg;x.font='bold '+fs+'px sans-serif';x.textAlign='center';x.textBaseline='middle';x.fillText(t,w/2,h/2);return new THREE.CanvasTexture(c)};
+ const B=(w,h,d)=>new THREE.BoxGeometry(w,h,d),col=(c,e)=>new THREE.MeshStandardMaterial({color:c,metalness:.3,roughness:.5,emissive:e||0}),ghost=new THREE.MeshBasicMaterial({transparent:true,opacity:0,depthWrite:false});
+ const A=(geo,mat,x,y,z,u)=>{const m=new THREE.Mesh(geo,mat);m.position.set(x,y,z||0);if(u){m.userData=u;pk.push(m)}panel.add(m);return m};
+ const pl2=(t,w,h,x,y,z)=>A(new THREE.PlaneGeometry(w,h),new THREE.MeshBasicMaterial({map:t,transparent:true}),x,y,z);
+ const build=()=>{
+  while(panel.children.length)panel.remove(panel.children[0]);pk=[];btn=null;
+  if(!$('stage')||!S)return;
+  A(B(6.6,5.2,.2),col(0x2d322c),0,0,-.1);
+  pl2(tex(S.ser,256,64,'#ece8d8','#15120e',46),2.6,.65,-1.6,2,.02);
+  [-2.95,-.25].forEach(x=>A(B(.15,1.9,.25),col(0x15120e),x,.5,.05));
+  S.w.forEach((c,i)=>{const y=1.2-i*.45,m=col(COL[c]),cy=l=>{const g=new THREE.CylinderGeometry(.09,.09,l,12);g.rotateZ(Math.PI/2);return g};
+   if(S.cut[i]){A(cy(1),m,-2.4,y-.05,.1);A(cy(1),m,-.8,y+.05,.1)}
+   else{A(cy(2.6),m,-1.6,y,.1);A(B(2.6,.4,.2),ghost,-1.6,y,.1,{t:'w',i})}});
+  const G=new THREE.Group(),g=new THREE.CylinderGeometry(.6,.6,.35,32);g.rotateX(Math.PI/2);
+  G.position.set(1.6,1.25,.2);panel.add(G);
+  A(new THREE.CylinderGeometry(.75,.75,.1,32).rotateX(Math.PI/2),col(0x15120e),1.6,1.25,.05);
+  const bb=new THREE.Mesh(g,col(COL[S.btn.c]));bb.userData={t:'b'};pk.push(bb);G.add(bb);
+  const lb=new THREE.Mesh(new THREE.PlaneGeometry(1,1),new THREE.MeshBasicMaterial({map:tex(S.btn.l,128,128,'#1d1d16',null,34),transparent:true}));lb.position.z=.19;G.add(lb);btn=G;
+  S.k.show.forEach((s,i)=>{const x=1.25+(i%2)*.7,y=-.1-(i>>1)*.7,lit=S.k.sol.slice(0,S.k.n).includes(s);
+   A(B(.6,.6,.18),col(lit?0x7bc47f:0xcfc8b0,lit?0x2a7a30:0),x,y,.05,{t:'k',i});pl2(tex(s,64,64,'#1d1d16',null,44),.5,.5,x,y,.15)});
+  S.lp.forEach((l,i)=>{const x=-2.3+i*.8;
+   A(new THREE.SphereGeometry(.14,16,12),col(l?0xffd24a:0x4a4a3c,l?0xffb000:0),x,-1.15,.1);
+   A(B(.5,.7,.15),col(0x15120e),x,-1.85,.05,{t:'s',i});
+   A(new THREE.CylinderGeometry(.06,.06,.4,10),col(0xe8e6df),x,-1.85+(S.sw[i]?.18:-.18),.2)});
+  A(B(.9,.5,.2),col(S.ok.s?0x7bc47f:0xd9a441),.7,-1.85,.1,{t:'sc'});pl2(tex(S.ok.s?'✔':'ONAY',128,48,'#1d1d16',null,32),.8,.3,.7,-1.85,.22);
+  [S.ok.w,S.ok.b,S.ok.k,S.ok.s].forEach((o,i)=>A(new THREE.SphereGeometry(.12,12,10),col(o?0x3cff7a:0x3a3a30,o?0x20c050:0),.9+i*.5,2.3,.08))};
+ const rc=new THREE.Raycaster(),mv=new THREE.Vector2();
+ const hit=e=>{mv.set(e.clientX/innerWidth*2-1,-e.clientY/innerHeight*2+1);rc.setFromCamera(mv,cam);const h=rc.intersectObjects(pk)[0];return h&&h.object.userData};
+ const press=on=>{if(btn)btn.position.z=on?.08:.2};
+ const lay=t=>{const st=$('stage');panel.visible=!!(st&&S);if(!panel.visible)return;
+  const R=st.getBoundingClientRect(),d=cam.position.z-2.2,u=2*d*Math.tan(.3927)/innerHeight,k=Math.min(R.width/6.6,R.height/5.2)*u;
+  panel.position.set((R.left+R.width/2-innerWidth/2)*u,-(R.top+R.height/2-innerHeight/2)*u,2.2);panel.scale.setScalar(k);panel.rotation.set(-.2+Math.sin(t)*.03,Math.sin(t*.7)*.1,0)};
+ Object.assign(T,{build,hit,press});
+ const rs=()=>{const W=innerWidth,H=innerHeight;r.setSize(W,H,false);cam.aspect=W/H;cam.updateProjectionMatrix();g.scale.setScalar(Math.min(1,cam.aspect*1.4))};
+ rs();addEventListener('resize',rs);
+ const clk=new THREE.Clock();
+ (function loop(){requestAnimationFrame(loop);
+  const dt=Math.min(clk.getDelta(),.05),t=clk.elapsedTime;
+  bm.rotation.y+=dt*.3;bm.rotation.x=Math.sin(t*.5)*.1;g.position.y=Math.sin(t*1.2)*.1;
+  pulse*=.9;flash*=.92;shake*=.9;pl.intensity=(.6+pulse*2.2+flash*6)*(panel.visible?.25:1);
+  cam.position.set((Math.random()-.5)*shake,(Math.random()-.5)*shake,7);lay(t);
+  for(let i=0;i<N;i++){const s=sv[i];s.l+=dt*1.6;
+   if(s.l>1){s.l=0;s.x=(Math.random()-.5)*1.2;s.y=Math.random()*1.5;s.z=(Math.random()-.5)*1.2}
+   sp[i*3]=.47+s.x*s.l;sp[i*3+1]=2.75+s.y*s.l-1.5*s.l*s.l;sp[i*3+2]=s.z*s.l}
+  spg.attributes.position.needsUpdate=true;
+  if(bt>=0){bt+=dt;for(let i=0;i<NB;i++){bp[i*3]=bv[i].x*bt;bp[i*3+1]=bv[i].y*bt-1.5*bt*bt;bp[i*3+2]=bv[i].z*bt}
+   bg.attributes.position.needsUpdate=true;bmat.opacity=Math.max(0,1-bt/2.2)}
+  r.render(sc,cam)})()}
+const swSol=(l,odd)=>l.map((_,i)=>l[(i+1)%4]^odd);
+function bomb(){return T?'<div id="stage" style="height:380px;touch-action:none"></div><p>Kabloya dokun: keser. Düğmeye bas: hızlı bırak ya da tut. Şalterlere ve tuşlara dokun.</p>':'<div class="card">Bu cihaz WebGL desteklemiyor, bomba görüntülenemiyor.</div>'}
+function stage(){const st=$('stage');if(T)T.build();if(!st||!T)return;let t0=0;
+ st.onpointerdown=e=>{const u=T.hit(e);if(!u)return;if(u.t=='b'){t0=Date.now();T.press(1);st.setPointerCapture(e.pointerId)}else act(u)};
+ st.onpointerup=st.onpointercancel=()=>{if(!t0)return;const d=Date.now()-t0;t0=0;T.press(0);act({t:'b',v:d<500?'tap':Math.ceil(left()/1000)%10})}}
+try{if(window.THREE)init3d()}catch(e){}
 lobby();
 </script></body></html>
