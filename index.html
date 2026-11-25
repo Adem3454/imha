@@ -52,6 +52,12 @@ h1{font-size:36px;text-shadow:0 0 20px rgba(255,107,44,.55)}
 @keyframes sh{20%{transform:translateX(-10px)}40%{transform:translateX(9px)}60%{transform:translateX(-6px)}80%{transform:translateX(4px)}}
 </style></head><body><div id="flash"></div><div id="app"></div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/shaders/CopyShader.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/shaders/LuminosityHighPassShader.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/EffectComposer.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/RenderPass.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/ShaderPass.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/UnrealBloomPass.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/peerjs/1.5.4/peerjs.min.js"></script>
 <script>
 const $=id=>document.getElementById(id);
@@ -178,42 +184,52 @@ function fx(){
 /* 3D bomba sahnesi (arka plan) */
 let T=null;
 function init3d(){
- const r=new THREE.WebGLRenderer({alpha:true,antialias:true}),sc=new THREE.Scene(),cam=new THREE.PerspectiveCamera(45,1,.1,50),g=new THREE.Group(),bm=new THREE.Group();
+ const r=new THREE.WebGLRenderer({antialias:true,powerPreference:'high-performance'}),sc=new THREE.Scene(),cam=new THREE.PerspectiveCamera(45,1,.1,50),g=new THREE.Group(),bm=new THREE.Group();
  r.setPixelRatio(Math.min(devicePixelRatio,2));r.domElement.id='gl';document.body.prepend(r.domElement);
  sc.add(g);g.add(bm);
- const M=(c,m,ro)=>new THREE.MeshStandardMaterial({color:c,metalness:m,roughness:ro}),dark=M(0x3a3f44,.6,.4);
+ r.shadowMap.enabled=true;r.shadowMap.type=THREE.PCFSoftShadowMap;
+ sc.background=new THREE.Color(0x12150f);sc.fog=new THREE.FogExp2(0x12150f,.035);
+ {const es=new THREE.Scene();es.add(new THREE.Mesh(new THREE.BoxGeometry(30,30,30),new THREE.MeshBasicMaterial({color:0x2a2e28,side:THREE.BackSide})));
+  [[0,12,0,16,.3,6,5],[-12,2,4,.3,10,10,3],[12,0,-4,.3,8,8,2]].forEach(([x,y,z,w,h,d,i])=>{const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),new THREE.MeshBasicMaterial({color:new THREE.Color(i,i*.95,i*.85)}));m.position.set(x,y,z);es.add(m)});
+  sc.environment=new THREE.PMREMGenerator(r).fromScene(es,.04).texture}
+ const M=(c,m,ro)=>new THREE.MeshStandardMaterial({color:c,metalness:m,roughness:ro}),dark=M(0x4a5056,.95,.28);
  const add=(geo,mat,x,y,z,rz)=>{const m=new THREE.Mesh(geo,mat);m.position.set(x||0,y||0,z||0);m.rotation.z=rz||0;bm.add(m);return m};
  add(new THREE.SphereGeometry(1.7,48,32),dark);
- add(new THREE.TorusGeometry(1.72,.09,12,64),M(0xd9a441,.5,.4)).rotation.x=Math.PI/2;
+ add(new THREE.TorusGeometry(1.72,.09,12,64),M(0xd9a441,.9,.3)).rotation.x=Math.PI/2;
  add(new THREE.CylinderGeometry(.35,.45,.4,20),dark,0,1.8);
  add(new THREE.CylinderGeometry(.05,.05,.9,8),M(0xc9b88a,0,.9),.25,2.35,0,-.5);
- sc.add(new THREE.HemisphereLight(0xbfc8d8,0x222018,.9));
- const dl=new THREE.DirectionalLight(0xffffff,.8);dl.position.set(3,4,5);sc.add(dl);
+ sc.add(new THREE.HemisphereLight(0xbfc8d8,0x222018,.35));
+ const dl=new THREE.DirectionalLight(0xffffff,.8);dl.position.set(3,4,5);dl.castShadow=true;dl.shadow.mapSize.set(2048,2048);dl.shadow.bias=-.0005;sc.add(dl);
  const pl=new THREE.PointLight(0xff3b1f,1,12);pl.position.set(0,0,3.5);sc.add(pl);
- const N=40,sp=new Float32Array(N*3),sv=[],spg=new THREE.BufferGeometry();
+ const N=260,sp=new Float32Array(N*3),sv=[],spg=new THREE.BufferGeometry();
  for(let i=0;i<N;i++)sv.push({l:Math.random(),x:0,y:0,z:0});
  spg.setAttribute('position',new THREE.BufferAttribute(sp,3));
  bm.add(new THREE.Points(spg,new THREE.PointsMaterial({size:.09,color:0xffb347,transparent:true,depthWrite:false,blending:THREE.AdditiveBlending})));
- const NB=300,bp=new Float32Array(NB*3),bv=[],bg=new THREE.BufferGeometry();
+ const NB=2500,bp=new Float32Array(NB*3),bv=[],bg=new THREE.BufferGeometry();
  for(let i=0;i<NB;i++)bv.push(new THREE.Vector3(Math.random()-.5,Math.random()-.5,Math.random()-.5).normalize().multiplyScalar(2+Math.random()*5));
  bg.setAttribute('position',new THREE.BufferAttribute(bp,3));
  const bmat=new THREE.PointsMaterial({size:.14,color:0xff8c3a,transparent:true,opacity:0,depthWrite:false,blending:THREE.AdditiveBlending});
  sc.add(new THREE.Points(bg,bmat));
  let shake=0,pulse=0,flash=0,bt=-1;
  T={pulse(){pulse=1},strike(){shake=.6;flash=1},
-  boom(){bm.visible=false;bt=0;flash=3;bmat.opacity=1},
+  boom(){bm.visible=false;bt=0;flash=3;bmat.opacity=1;ring.material.opacity=1;ring.scale.setScalar(1)},
   win(){dark.emissive.setHex(0x14803a);pl.color.setHex(0x3cff7a);flash=1.5},
-  reset(){bm.visible=true;bt=-1;bmat.opacity=0;dark.emissive.setHex(0);pl.color.setHex(0xff3b1f);flash=0}};
+  reset(){bm.visible=true;bt=-1;bmat.opacity=0;ring.material.opacity=0;dark.emissive.setHex(0);pl.color.setHex(0xff3b1f);flash=0}};
  /* Etkileşimli 3D bomba paneli */
  const panel=new THREE.Group();sc.add(panel);let pk=[],btn=null;
  const tex=(t,w,h,fg,bg,fs)=>{const c=document.createElement('canvas');c.width=w;c.height=h;const x=c.getContext('2d');if(bg){x.fillStyle=bg;x.fillRect(0,0,w,h)}x.fillStyle=fg;x.font='bold '+fs+'px sans-serif';x.textAlign='center';x.textBaseline='middle';x.fillText(t,w/2,h/2);return new THREE.CanvasTexture(c)};
  const B=(w,h,d)=>new THREE.BoxGeometry(w,h,d),col=(c,e)=>new THREE.MeshStandardMaterial({color:c,metalness:.3,roughness:.5,emissive:e||0}),ghost=new THREE.MeshBasicMaterial({transparent:true,opacity:0,depthWrite:false});
- const A=(geo,mat,x,y,z,u)=>{const m=new THREE.Mesh(geo,mat);m.position.set(x,y,z||0);if(u){m.userData=u;pk.push(m)}panel.add(m);return m};
+ const A=(geo,mat,x,y,z,u)=>{const m=new THREE.Mesh(geo,mat);m.position.set(x,y,z||0);if(u){m.userData=u;pk.push(m)}m.castShadow=m.receiveShadow=mat!==ghost;panel.add(m);return m};
  const pl2=(t,w,h,x,y,z)=>A(new THREE.PlaneGeometry(w,h),new THREE.MeshBasicMaterial({map:t,transparent:true}),x,y,z);
+ const mt=(()=>{const c=document.createElement('canvas');c.width=c.height=512;const x=c.getContext('2d');x.fillStyle='#808080';x.fillRect(0,0,512,512);
+  for(let i=0;i<900;i++){x.strokeStyle='rgba('+(Math.random()<.5?'255,255,255':'0,0,0')+','+Math.random()*.25+')';x.lineWidth=Math.random()*1.5;x.beginPath();const a=Math.random()*512,b=Math.random()*512;x.moveTo(a,b);x.lineTo(a+Math.random()*60,b+Math.random()*4-2);x.stroke()}
+  const t=new THREE.CanvasTexture(c);t.wrapS=t.wrapT=THREE.RepeatWrapping;return t})();
+ const pmat=new THREE.MeshStandardMaterial({color:0x4a5246,metalness:.85,roughness:.45,bumpMap:mt,bumpScale:1.5});
+ let pc=[0,0,0,0];
  const build=()=>{
   while(panel.children.length)panel.remove(panel.children[0]);pk=[];btn=null;
   if(!$('stage')||!S)return;
-  A(B(6.6,5.2,.2),col(0x2d322c),0,0,-.1);
+  A(B(6.6,5.2,.2),pmat,0,0,-.1);[[-3.1,2.4],[3.1,2.4],[-3.1,-2.4],[3.1,-2.4]].forEach(([x,y])=>A(new THREE.SphereGeometry(.12,16,12),col(0xaaa898),x,y,.02));
   pl2(tex(S.ser,256,64,'#ece8d8','#15120e',46),2.6,.65,-1.6,2,.02);
   [-2.95,-.25].forEach(x=>A(B(.15,1.9,.25),col(0x15120e),x,.5,.05));
   S.w.forEach((c,i)=>{const y=1.2-i*.45,m=col(COL[c]),cy=l=>{const g=new THREE.CylinderGeometry(.09,.09,l,12);g.rotateZ(Math.PI/2);return g};
@@ -231,15 +247,27 @@ function init3d(){
    A(B(.5,.7,.15),col(0x15120e),x,-1.85,.05,{t:'s',i});
    A(new THREE.CylinderGeometry(.06,.06,.4,10),col(0xe8e6df),x,-1.85+(S.sw[i]?.18:-.18),.2)});
   A(B(.9,.5,.2),col(S.ok.s?0x7bc47f:0xd9a441),.7,-1.85,.1,{t:'sc'});pl2(tex(S.ok.s?'✔':'ONAY',128,48,'#1d1d16',null,32),.8,.3,.7,-1.85,.22);
-  [S.ok.w,S.ok.b,S.ok.k,S.ok.s].forEach((o,i)=>A(new THREE.SphereGeometry(.12,12,10),col(o?0x3cff7a:0x3a3a30,o?0x20c050:0),.9+i*.5,2.3,.08))};
+  [S.ok.w,S.ok.b,S.ok.k,S.ok.s].forEach((o,i)=>A(new THREE.SphereGeometry(.12,12,10),col(o?0x3cff7a:0x3a3a30,o?0x20c050:0),.9+i*.5,2.3,.08));
+  S.cut.forEach((c,i)=>{if(c&&!pc[i]){panel.updateMatrixWorld();cs.burst(panel.localToWorld(new THREE.Vector3(-1.6,1.2-i*.45,.3)))}});pc=S.cut.slice()};
  const rc=new THREE.Raycaster(),mv=new THREE.Vector2();
  const hit=e=>{mv.set(e.clientX/innerWidth*2-1,-e.clientY/innerHeight*2+1);rc.setFromCamera(mv,cam);const h=rc.intersectObjects(pk)[0];return h&&h.object.userData};
  const press=on=>{if(btn)btn.position.z=on?.08:.2};
- const lay=t=>{const st=$('stage');panel.visible=!!(st&&S);if(!panel.visible)return;
+ const lay=t=>{const st=$('stage');panel.visible=!!(st&&S&&S.res!='boom');if(!panel.visible)return;
   const R=st.getBoundingClientRect(),d=cam.position.z-2.2,u=2*d*Math.tan(.3927)/innerHeight,k=Math.min(R.width/6.6,R.height/5.2)*u;
   panel.position.set((R.left+R.width/2-innerWidth/2)*u,-(R.top+R.height/2-innerHeight/2)*u,2.2);panel.scale.setScalar(k);panel.rotation.set(-.2+Math.sin(t)*.03,Math.sin(t*.7)*.1,0)};
  Object.assign(T,{build,hit,press});
- const rs=()=>{const W=innerWidth,H=innerHeight;r.setSize(W,H,false);cam.aspect=W/H;cam.updateProjectionMatrix();g.scale.setScalar(Math.min(1,cam.aspect*1.4))};
+ let comp=null;
+ try{if(THREE.EffectComposer&&THREE.UnrealBloomPass){const pr=r.getPixelRatio(),rt=new THREE.WebGLMultisampleRenderTarget(innerWidth*pr,innerHeight*pr,{type:THREE.HalfFloatType});rt.samples=4;
+  comp=new THREE.EffectComposer(r,rt);comp.addPass(new THREE.RenderPass(sc,cam));comp.addPass(new THREE.UnrealBloomPass(new THREE.Vector2(innerWidth,innerHeight),.8,.55,.8))}}catch(e){comp=null}
+ const ring=new THREE.Mesh(new THREE.RingGeometry(.9,1,64),new THREE.MeshBasicMaterial({color:0xffa050,transparent:true,opacity:0,side:THREE.DoubleSide,depthWrite:false,blending:THREE.AdditiveBlending}));ring.position.z=2;sc.add(ring);
+ const DN=700,dp=new Float32Array(DN*3);for(let i=0;i<DN*3;i++)dp[i]=(Math.random()-.5)*(i%3==2?10:16);
+ const dg=new THREE.BufferGeometry();dg.setAttribute('position',new THREE.BufferAttribute(dp,3));
+ const dust=new THREE.Points(dg,new THREE.PointsMaterial({size:.035,color:0xb8c0a8,transparent:true,opacity:.5,depthWrite:false}));sc.add(dust);
+ const CN=80,cp=new Float32Array(CN*3),cv=[],cg=new THREE.BufferGeometry();cg.setAttribute('position',new THREE.BufferAttribute(cp,3));
+ for(let i=0;i<CN;i++)cv.push(new THREE.Vector3());
+ const cm=new THREE.PointsMaterial({size:.07,color:0xfff0a0,transparent:true,opacity:0,depthWrite:false,blending:THREE.AdditiveBlending});sc.add(new THREE.Points(cg,cm));
+ let ct=-1;const co=new THREE.Vector3(),cs={burst(v){co.copy(v);ct=0;cm.opacity=1;cv.forEach(x=>x.set(Math.random()-.5,Math.random()-.2,Math.random()-.3).normalize().multiplyScalar(.6+Math.random()*1.8))}};
+ const rs=()=>{const W=innerWidth,H=innerHeight;r.setSize(W,H,false);comp&&comp.setSize(W,H);cam.aspect=W/H;cam.updateProjectionMatrix();g.scale.setScalar(Math.min(1,cam.aspect*1.4))};
  rs();addEventListener('resize',rs);
  const clk=new THREE.Clock();
  (function loop(){requestAnimationFrame(loop);
@@ -253,7 +281,10 @@ function init3d(){
   spg.attributes.position.needsUpdate=true;
   if(bt>=0){bt+=dt;for(let i=0;i<NB;i++){bp[i*3]=bv[i].x*bt;bp[i*3+1]=bv[i].y*bt-1.5*bt*bt;bp[i*3+2]=bv[i].z*bt}
    bg.attributes.position.needsUpdate=true;bmat.opacity=Math.max(0,1-bt/2.2)}
-  r.render(sc,cam)})()}
+  dust.rotation.y+=dt*.02;dust.position.y=Math.sin(t*.3)*.2;
+  if(bt>=0){ring.scale.setScalar(1+bt*14);ring.material.opacity=Math.max(0,1-bt*1.4)}
+  if(ct>=0){ct+=dt;for(let i=0;i<CN;i++){cp[i*3]=co.x+cv[i].x*ct;cp[i*3+1]=co.y+cv[i].y*ct-2*ct*ct;cp[i*3+2]=co.z+cv[i].z*ct}cg.attributes.position.needsUpdate=true;cm.opacity=Math.max(0,1-ct*2.2)}
+  comp?comp.render():r.render(sc,cam)})()}
 const swSol=(l,odd)=>l.map((_,i)=>l[(i+1)%4]^odd);
 function bomb(){return T?'<div id="stage" style="height:380px;touch-action:none"></div><p>Kabloya dokun: keser. Düğmeye bas: hızlı bırak ya da tut. Şalterlere ve tuşlara dokun.</p>':'<div class="card">Bu cihaz WebGL desteklemiyor, bomba görüntülenemiyor.</div>'}
 function stage(){const st=$('stage');if(T)T.build();if(!st||!T)return;let t0=0;
