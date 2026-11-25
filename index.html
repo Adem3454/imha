@@ -69,10 +69,11 @@ const rnd=n=>Math.floor(Math.random()*n);
 const pick=a=>a[rnd(a.length)];
 const shuffle=a=>a.map(x=>[Math.random(),x]).sort((p,q)=>p[0]-q[0]).map(p=>p[1]);
 const fmt=l=>{const s=Math.ceil(l/1000);return Math.floor(s/60)+':'+String(s%60).padStart(2,'0')};
-const left=()=>S.run?S.left-(Date.now()-recv):S.left;
+const left=()=>S.run?S.left-(Date.now()-recv)*(1+.25*S.st):S.left;
 
 /* Çözüm kuralları: kılavuzdaki metinle birebir aynı olmalı */
-const wireSol=(w,odd)=>{const c=x=>w.filter(y=>y==x).length;
+const wireSol=(w,odd,bat,ind)=>{const c=x=>w.filter(y=>y==x).length;
+ if(bat>=2&&ind.on&&ind.n!='SES')return 3;
  if(c('r')>1&&odd)return w.lastIndexOf('r');
  if(w[3]=='y'&&!c('r'))return 0;
  if(c('b')==1)return 0;
@@ -105,7 +106,7 @@ function newRound(){
  const col=rnd(3),idx=shuffle([0,1,2,3,4,5]).slice(0,4).sort(),sol=idx.map(i=>SYM[col][i]),L='ABCDEFGHJKLMNPRSTUXYZ';
  S={round,dc:round%2?'h':'g',ser:pick(L)+pick(L)+'-'+(1000+rnd(9000)),
   w:Array.from({length:4},()=>pick('rbyw')),cut:[0,0,0,0],btn:{c:pick('rbyw'),l:pick(LAB)},
-  k:{show:shuffle(sol),sol,n:0},lp:Array.from({length:4},()=>rnd(2)),sw:[0,0,0,0],ok:{w:0,b:0,k:0,s:0},st:0,left:300000,run:1,res:''};
+  k:{show:shuffle(sol),sol,n:0},bat:rnd(5),ind:{n:pick(['KRK','SES','FRK']),on:rnd(2)},lp:Array.from({length:4},()=>rnd(2)),sw:[0,0,0,0],ok:{w:0,b:0,k:0,s:0},st:0,left:300000,run:1,res:''};
  recv=Date.now();sync()}
 function sync(){conn.send({s:S});draw()}
 function act(a){host?apply(a):conn.send({a})}
@@ -113,7 +114,7 @@ function apply(a){
  if(!S.run)return;
  S.left=Math.max(0,left());recv=Date.now();
  const d=+S.ser.slice(-1),bad=()=>{if(++S.st>=3){S.run=0;S.res='boom'}};
- if(a.t=='w'&&!S.cut[a.i]&&!S.ok.w){S.cut[a.i]=1;a.i==wireSol(S.w,d%2)?S.ok.w=1:bad()}
+ if(a.t=='w'&&!S.cut[a.i]&&!S.ok.w){S.cut[a.i]=1;a.i==wireSol(S.w,d%2,S.bat,S.ind)?S.ok.w=1:bad()}
  if(a.t=='b'&&!S.ok.b)a.v==btnSol(S.btn,d)?S.ok.b=1:bad();
  if(a.t=='k'&&!S.ok.k){
   if(S.k.show[a.i]==S.k.sol[S.k.n]){if(++S.k.n==4)S.ok.k=1}else{S.k.n=0;bad()}}
@@ -147,9 +148,9 @@ function bomb(){
  <div class="card">${ck(S.ok.k)}Semboller<br>`+S.k.show.map((s,i)=>`<button class="k${S.k.sol.slice(0,S.k.n).includes(s)?' on':''}" onclick="act({t:'k',i:${i}})">${s}</button>`).join('')+`</div>`}
 function manual(){
  return `<div class="card man"><h3>Bomba imha kılavuzu</h3>
- <p>Seri numarasını, kabloların renk sırasını, düğmenin rengi ile yazısını ve sembolleri arkadaşından iste.</p>
+ <p>Bombanın ön yüzünde kablolar, düğme, semboller, şalterler ve lambalar var. Arka yüzünde seri no, piller ve gösterge lambası (KRK, SES ya da FRK; yanık ya da sönük) bulunur. Arkadaşından bombayı çevirmesini iste. Her hata saati biraz hızlandırır.</p>
  <h3>1. Kablolar</h3><p>4 kablo var. Kuralları sırayla dene, ilk uyan kural geçerli.</p><ol>
- <li>Birden fazla kırmızı kablo var ve seri no son rakamı tekse: son kırmızı kabloyu kes.</li>
+ <li>Pil sayısı 2 veya daha fazla ve SES dışındaki gösterge lambası yanıksa: son kabloyu kes.</li><li>Birden fazla kırmızı kablo var ve seri no son rakamı tekse: son kırmızı kabloyu kes.</li>
  <li>Son kablo sarı ve hiç kırmızı kablo yoksa: ilk kabloyu kes.</li>
  <li>Tam olarak bir mavi kablo varsa: ilk kabloyu kes.</li>
  <li>Birden fazla sarı kablo varsa: son kabloyu kes.</li>
@@ -189,17 +190,17 @@ function init3d(){
  sc.add(g);g.add(bm);
  r.shadowMap.enabled=true;r.shadowMap.type=THREE.PCFSoftShadowMap;
  sc.background=new THREE.Color(0x12150f);sc.fog=new THREE.FogExp2(0x12150f,.035);
- {const es=new THREE.Scene();es.add(new THREE.Mesh(new THREE.BoxGeometry(30,30,30),new THREE.MeshBasicMaterial({color:0x2a2e28,side:THREE.BackSide})));
-  [[0,12,0,16,.3,6,5],[-12,2,4,.3,10,10,3],[12,0,-4,.3,8,8,2]].forEach(([x,y,z,w,h,d,i])=>{const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),new THREE.MeshBasicMaterial({color:new THREE.Color(i,i*.95,i*.85)}));m.position.set(x,y,z);es.add(m)});
+ {const es=new THREE.Scene();es.add(new THREE.Mesh(new THREE.BoxGeometry(30,30,30),new THREE.MeshBasicMaterial({color:0x1a1d17,side:THREE.BackSide})));
+  [[0,12,0,16,.3,6,1.6],[-12,2,4,.3,10,10,1],[12,0,-4,.3,8,8,.8]].forEach(([x,y,z,w,h,d,i])=>{const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),new THREE.MeshBasicMaterial({color:new THREE.Color(i,i*.95,i*.85)}));m.position.set(x,y,z);es.add(m)});
   sc.environment=new THREE.PMREMGenerator(r).fromScene(es,.04).texture}
- const M=(c,m,ro)=>new THREE.MeshStandardMaterial({color:c,metalness:m,roughness:ro}),dark=M(0x4a5056,.95,.28);
+ const M=(c,m,ro)=>new THREE.MeshStandardMaterial({color:c,metalness:m,roughness:ro}),dark=M(0x4a5056,.7,.45);
  const add=(geo,mat,x,y,z,rz)=>{const m=new THREE.Mesh(geo,mat);m.position.set(x||0,y||0,z||0);m.rotation.z=rz||0;bm.add(m);return m};
  add(new THREE.SphereGeometry(1.7,48,32),dark);
  add(new THREE.TorusGeometry(1.72,.09,12,64),M(0xd9a441,.9,.3)).rotation.x=Math.PI/2;
  add(new THREE.CylinderGeometry(.35,.45,.4,20),dark,0,1.8);
  add(new THREE.CylinderGeometry(.05,.05,.9,8),M(0xc9b88a,0,.9),.25,2.35,0,-.5);
- sc.add(new THREE.HemisphereLight(0xbfc8d8,0x222018,.35));
- const dl=new THREE.DirectionalLight(0xffffff,.8);dl.position.set(3,4,5);dl.castShadow=true;dl.shadow.mapSize.set(2048,2048);dl.shadow.bias=-.0005;sc.add(dl);
+ sc.add(new THREE.HemisphereLight(0xbfc8d8,0x222018,.55));
+ const dl=new THREE.DirectionalLight(0xffffff,.6);dl.position.set(3,4,5);dl.castShadow=true;dl.shadow.mapSize.set(2048,2048);dl.shadow.bias=-.0005;sc.add(dl);
  const pl=new THREE.PointLight(0xff3b1f,1,12);pl.position.set(0,0,3.5);sc.add(pl);
  const N=260,sp=new Float32Array(N*3),sv=[],spg=new THREE.BufferGeometry();
  for(let i=0;i<N;i++)sv.push({l:Math.random(),x:0,y:0,z:0});
@@ -214,23 +215,31 @@ function init3d(){
  T={pulse(){pulse=1},strike(){shake=.6;flash=1},
   boom(){bm.visible=false;bt=0;flash=3;bmat.opacity=1;ring.material.opacity=1;ring.scale.setScalar(1)},
   win(){dark.emissive.setHex(0x14803a);pl.color.setHex(0x3cff7a);flash=1.5},
-  reset(){bm.visible=true;bt=-1;bmat.opacity=0;ring.material.opacity=0;dark.emissive.setHex(0);pl.color.setHex(0xff3b1f);flash=0}};
+  reset(){ft=0;bm.visible=true;bt=-1;bmat.opacity=0;ring.material.opacity=0;dark.emissive.setHex(0);pl.color.setHex(0xff3b1f);flash=0}};
  /* Etkileşimli 3D bomba paneli */
  const panel=new THREE.Group();sc.add(panel);let pk=[],btn=null;
  const tex=(t,w,h,fg,bg,fs)=>{const c=document.createElement('canvas');c.width=w;c.height=h;const x=c.getContext('2d');if(bg){x.fillStyle=bg;x.fillRect(0,0,w,h)}x.fillStyle=fg;x.font='bold '+fs+'px sans-serif';x.textAlign='center';x.textBaseline='middle';x.fillText(t,w/2,h/2);return new THREE.CanvasTexture(c)};
- const B=(w,h,d)=>new THREE.BoxGeometry(w,h,d),col=(c,e)=>new THREE.MeshStandardMaterial({color:c,metalness:.3,roughness:.5,emissive:e||0}),ghost=new THREE.MeshBasicMaterial({transparent:true,opacity:0,depthWrite:false});
+ const B=(w,h,d)=>new THREE.BoxGeometry(w,h,d),col=(c,e)=>new THREE.MeshStandardMaterial({color:c,metalness:.05,roughness:.65,envMapIntensity:.5,emissive:e||0}),ghost=new THREE.MeshBasicMaterial({transparent:true,opacity:0,depthWrite:false});
  const A=(geo,mat,x,y,z,u)=>{const m=new THREE.Mesh(geo,mat);m.position.set(x,y,z||0);if(u){m.userData=u;pk.push(m)}m.castShadow=m.receiveShadow=mat!==ghost;panel.add(m);return m};
  const pl2=(t,w,h,x,y,z)=>A(new THREE.PlaneGeometry(w,h),new THREE.MeshBasicMaterial({map:t,transparent:true}),x,y,z);
  const mt=(()=>{const c=document.createElement('canvas');c.width=c.height=512;const x=c.getContext('2d');x.fillStyle='#808080';x.fillRect(0,0,512,512);
   for(let i=0;i<900;i++){x.strokeStyle='rgba('+(Math.random()<.5?'255,255,255':'0,0,0')+','+Math.random()*.25+')';x.lineWidth=Math.random()*1.5;x.beginPath();const a=Math.random()*512,b=Math.random()*512;x.moveTo(a,b);x.lineTo(a+Math.random()*60,b+Math.random()*4-2);x.stroke()}
   const t=new THREE.CanvasTexture(c);t.wrapS=t.wrapT=THREE.RepeatWrapping;return t})();
- const pmat=new THREE.MeshStandardMaterial({color:0x4a5246,metalness:.85,roughness:.45,bumpMap:mt,bumpScale:1.5});
- let pc=[0,0,0,0];
+ const pmat=new THREE.MeshStandardMaterial({color:0x4a5246,metalness:.4,roughness:.65,envMapIntensity:.5,bumpMap:mt,bumpScale:1.5});
+ let pc=[0,0,0,0],ft=0,fl=0;
  const build=()=>{
   while(panel.children.length)panel.remove(panel.children[0]);pk=[];btn=null;
   if(!$('stage')||!S)return;
-  A(B(6.6,5.2,.2),pmat,0,0,-.1);[[-3.1,2.4],[3.1,2.4],[-3.1,-2.4],[3.1,-2.4]].forEach(([x,y])=>A(new THREE.SphereGeometry(.12,16,12),col(0xaaa898),x,y,.02));
-  pl2(tex(S.ser,256,64,'#ece8d8','#15120e',46),2.6,.65,-1.6,2,.02);
+  A(B(6.6,5.2,.2),pmat,0,0,-.1);
+  const bk=new THREE.Group();bk.position.z=-.2;bk.rotation.y=Math.PI;panel.add(bk);
+  const AB=(geo,mat,x,y,z)=>{const m=new THREE.Mesh(geo,mat);m.position.set(x,y,z||0);m.castShadow=m.receiveShadow=true;bk.add(m);return m};
+  const pb=(t,w,h,x,y)=>{const m=new THREE.Mesh(new THREE.PlaneGeometry(w,h),new THREE.MeshBasicMaterial({map:t,transparent:true}));m.position.set(x,y,.02);bk.add(m)};
+  pb(tex(S.ser,256,64,'#ece8d8','#15120e',46),3,.75,0,1.7);
+  AB(B(3.4,1.4,.15),col(0x15120e),0,-.1,.08);
+  for(let i=0;i<S.bat;i++){AB(new THREE.CylinderGeometry(.24,.24,1,16),col(0x1f3b5c),-1.2+i*.8,-.1,.3);AB(new THREE.CylinderGeometry(.1,.1,.12,12),col(0xd9a441),-1.2+i*.8,.45,.3)}
+  AB(B(1.5,.6,.15),col(S.ind.on?0xffd24a:0x3a3a30,S.ind.on?0xb07800:0),0,-1.7,.08);
+  pb(tex(S.ind.n,128,48,S.ind.on?'#1d1d16':'#8a8a78',null,34),1.2,.45,0,-1.7);[[-3.1,2.4],[3.1,2.4],[-3.1,-2.4],[3.1,-2.4]].forEach(([x,y])=>A(new THREE.SphereGeometry(.12,16,12),col(0xaaa898),x,y,.02));
+  
   [-2.95,-.25].forEach(x=>A(B(.15,1.9,.25),col(0x15120e),x,.5,.05));
   S.w.forEach((c,i)=>{const y=1.2-i*.45,m=col(COL[c]),cy=l=>{const g=new THREE.CylinderGeometry(.09,.09,l,12);g.rotateZ(Math.PI/2);return g};
    if(S.cut[i]){A(cy(1),m,-2.4,y-.05,.1);A(cy(1),m,-.8,y+.05,.1)}
@@ -250,15 +259,15 @@ function init3d(){
   [S.ok.w,S.ok.b,S.ok.k,S.ok.s].forEach((o,i)=>A(new THREE.SphereGeometry(.12,12,10),col(o?0x3cff7a:0x3a3a30,o?0x20c050:0),.9+i*.5,2.3,.08));
   S.cut.forEach((c,i)=>{if(c&&!pc[i]){panel.updateMatrixWorld();cs.burst(panel.localToWorld(new THREE.Vector3(-1.6,1.2-i*.45,.3)))}});pc=S.cut.slice()};
  const rc=new THREE.Raycaster(),mv=new THREE.Vector2();
- const hit=e=>{mv.set(e.clientX/innerWidth*2-1,-e.clientY/innerHeight*2+1);rc.setFromCamera(mv,cam);const h=rc.intersectObjects(pk)[0];return h&&h.object.userData};
+ const hit=e=>{if(ft>1)return;mv.set(e.clientX/innerWidth*2-1,-e.clientY/innerHeight*2+1);rc.setFromCamera(mv,cam);const h=rc.intersectObjects(pk)[0];return h&&h.object.userData};
  const press=on=>{if(btn)btn.position.z=on?.08:.2};
  const lay=t=>{const st=$('stage');panel.visible=!!(st&&S&&S.res!='boom');if(!panel.visible)return;
   const R=st.getBoundingClientRect(),d=cam.position.z-2.2,u=2*d*Math.tan(.3927)/innerHeight,k=Math.min(R.width/6.6,R.height/5.2)*u;
-  panel.position.set((R.left+R.width/2-innerWidth/2)*u,-(R.top+R.height/2-innerHeight/2)*u,2.2);panel.scale.setScalar(k);panel.rotation.set(-.2+Math.sin(t)*.03,Math.sin(t*.7)*.1,0)};
- Object.assign(T,{build,hit,press});
+  panel.position.set((R.left+R.width/2-innerWidth/2)*u,-(R.top+R.height/2-innerHeight/2)*u,2.2);panel.scale.setScalar(k);fl+=(ft-fl)*.15;panel.rotation.set(-.2+Math.sin(t)*.03,fl+Math.sin(t*.7)*.1,0)};
+ Object.assign(T,{build,hit,press,flip(){ft=ft?0:Math.PI}});
  let comp=null;
  try{if(THREE.EffectComposer&&THREE.UnrealBloomPass){const pr=r.getPixelRatio(),rt=new THREE.WebGLMultisampleRenderTarget(innerWidth*pr,innerHeight*pr,{type:THREE.HalfFloatType});rt.samples=4;
-  comp=new THREE.EffectComposer(r,rt);comp.addPass(new THREE.RenderPass(sc,cam));comp.addPass(new THREE.UnrealBloomPass(new THREE.Vector2(innerWidth,innerHeight),.8,.55,.8))}}catch(e){comp=null}
+  comp=new THREE.EffectComposer(r,rt);comp.addPass(new THREE.RenderPass(sc,cam));comp.addPass(new THREE.UnrealBloomPass(new THREE.Vector2(innerWidth,innerHeight),.3,.4,.9))}}catch(e){comp=null}
  const ring=new THREE.Mesh(new THREE.RingGeometry(.9,1,64),new THREE.MeshBasicMaterial({color:0xffa050,transparent:true,opacity:0,side:THREE.DoubleSide,depthWrite:false,blending:THREE.AdditiveBlending}));ring.position.z=2;sc.add(ring);
  const DN=700,dp=new Float32Array(DN*3);for(let i=0;i<DN*3;i++)dp[i]=(Math.random()-.5)*(i%3==2?10:16);
  const dg=new THREE.BufferGeometry();dg.setAttribute('position',new THREE.BufferAttribute(dp,3));
@@ -273,7 +282,7 @@ function init3d(){
  (function loop(){requestAnimationFrame(loop);
   const dt=Math.min(clk.getDelta(),.05),t=clk.elapsedTime;
   bm.rotation.y+=dt*.3;bm.rotation.x=Math.sin(t*.5)*.1;g.position.y=Math.sin(t*1.2)*.1;
-  pulse*=.9;flash*=.92;shake*=.9;pl.intensity=(.6+pulse*2.2+flash*6)*(panel.visible?.25:1);
+  pulse*=.9;flash*=.92;shake*=.9;pl.intensity=(.5+pulse*1.2+flash*3)*(panel.visible?.1:.8);
   cam.position.set((Math.random()-.5)*shake,(Math.random()-.5)*shake,7);lay(t);
   for(let i=0;i<N;i++){const s=sv[i];s.l+=dt*1.6;
    if(s.l>1){s.l=0;s.x=(Math.random()-.5)*1.2;s.y=Math.random()*1.5;s.z=(Math.random()-.5)*1.2}
@@ -286,7 +295,7 @@ function init3d(){
   if(ct>=0){ct+=dt;for(let i=0;i<CN;i++){cp[i*3]=co.x+cv[i].x*ct;cp[i*3+1]=co.y+cv[i].y*ct-2*ct*ct;cp[i*3+2]=co.z+cv[i].z*ct}cg.attributes.position.needsUpdate=true;cm.opacity=Math.max(0,1-ct*2.2)}
   comp?comp.render():r.render(sc,cam)})()}
 const swSol=(l,odd)=>l.map((_,i)=>l[(i+1)%4]^odd);
-function bomb(){return T?'<div id="stage" style="height:380px;touch-action:none"></div><p>Kabloya dokun: keser. Düğmeye bas: hızlı bırak ya da tut. Şalterlere ve tuşlara dokun.</p>':'<div class="card">Bu cihaz WebGL desteklemiyor, bomba görüntülenemiyor.</div>'}
+function bomb(){return T?'<div id="stage" style="height:380px;touch-action:none"></div><button class="b" onclick="T.flip()">Bombayı çevir (ön / arka)</button><p>Kabloya dokun: keser. Düğmeye bas: hızlı bırak ya da tut. Şalterlere ve tuşlara dokun.</p>':'<div class="card">Bu cihaz WebGL desteklemiyor, bomba görüntülenemiyor.</div>'}
 function stage(){const st=$('stage');if(T)T.build();if(!st||!T)return;let t0=0;
  st.onpointerdown=e=>{const u=T.hit(e);if(!u)return;if(u.t=='b'){t0=Date.now();T.press(1);st.setPointerCapture(e.pointerId)}else act(u)};
  st.onpointerup=st.onpointercancel=()=>{if(!t0)return;const d=Date.now()-t0;t0=0;T.press(0);act({t:'b',v:d<500?'tap':Math.ceil(left()/1000)%10})}}
