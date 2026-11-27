@@ -80,7 +80,7 @@ body{text-shadow:0 1px 3px rgba(0,0,0,.85)}
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/ShaderPass.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/UnrealBloomPass.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/RGBELoader.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/peerjs/1.5.4/peerjs.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/peerjs/1.5.5/peerjs.min.js"></script>
 <script>
 const $=id=>document.getElementById(id);
 const COL={r:'#d63c3c',b:'#2f6fd6',y:'#e8c22e',w:'#f1efe6'};
@@ -108,79 +108,71 @@ const btnSol=(b,d,bat,R)=>(b.l==R.l||b.c==R.c)?'tap':(R.h?(d+bat)%10:d);
 function mkRules(tl){const C=shuffle(['r','b','y','w']);
  return{w:{tl:tl?1:0,x:pick(['SES','KRK','FRK']),b1:2+rnd(2),c1:C[0],c2:C[1],c3:C[2],p:rnd(2),j:1+rnd(2)},bt:{l:pick(LAB),c:pick('rbyw'),h:rnd(2)},sw:{o:pick([1,3]),p:rnd(2)},
   cols:SYM.map(c=>shuffle(c)),kr:rnd(2),dt:shuffle([0,1,2,3,4,5,6,7,8,9]).slice(0,6),dp:rnd(2),da:pick([3,5,7]),ft:Array.from({length:8},()=>rnd(3)),pm:[0,1,2].map(()=>shuffle([0,1,2,3]).slice(0,2)),gr:{o:rnd(2),p:rnd(2)}}}
-/* Bağlantı */
+/* Bağlantı: oda sahibi ve katılan aynı PeerServer ayarlarını kullanır. */
+const PEER_OPTIONS={
+ host:'0.peerjs.com',port:443,path:'/',secure:true,debug:2,
+ config:{iceServers:[
+  {urls:'stun:stun.l.google.com:19302'},
+  {urls:'stun:stun1.l.google.com:19302'}
+ ]}
+};
 function netmsg(m){const el=$('netmsg');if(el)el.textContent=m;}
-function lobby(m){
- $('app').innerHTML=`<h1>Fitil</h1><p>Biriniz bombayı görür, diğeriniz kılavuzu bilir. Sesli arama açın, konuşun, kesin.</p>
- <div class="card"><button class="b" onclick="mk()">Oda kur</button></div>
- <div class="card">Oda kodu<br><input id="code" maxlength="4" autocomplete="off" autocapitalize="characters" placeholder="ABCD"> <button class="b" onclick="jn()">Katıl</button></div>
- <p id="netmsg" role="status" aria-live="polite">${m||''}</p>`;
+function peerErrorText(e){
+ const t=e&&e.type;
+ if(t==='peer-unavailable')return 'Bu kodla açık oda bulunamadı. Oda sahibi yeni oda açıp yeni kodu göndermeli.';
+ if(t==='network'||t==='server-error'||t==='socket-error'||t==='socket-closed')return 'PeerJS sinyal sunucusuna bağlanılamadı. Ağ/VPN veya sunucu erişimini kontrol edin.';
+ if(t==='webrtc')return 'Tarayıcılar arasında WebRTC bağlantısı kurulamadı. Farklı bir ağda deneyin.';
+ if(t==='browser-incompatible')return 'Bu tarayıcı WebRTC bağlantısını desteklemiyor. Güncel Chrome veya Edge deneyin.';
+ return 'Bağlantı hatası: '+(t||e&&e.message||'bilinmeyen hata');
 }
+function lobby(m){$('app').innerHTML=`<h1>Fitil</h1><p>Biriniz bombayı görür, diğeriniz kılavuzu bilir. Sesli arama açın, konuşun, kesin.</p>
+<div class="card"><button class="b" onclick="mk()">Oda kur</button></div>
+<div class="card">Oda kodu<br><input id="code" maxlength="4" autocomplete="off" autocapitalize="characters" placeholder="ABCD"> <button class="b" onclick="jn()">Katıl</button></div><p id="netmsg" role="status" aria-live="polite">${m||''}</p>`}
 function hook(c){
  c.on('data',d=>{if(d.menu){S=null;P={};T&&T.reset();pop('');$('app').innerHTML='<h1>Fitil</h1><div class="card">Oda sahibi seviye seçiyor…</div>';return}if(d.s){S=d.s;recv=Date.now();draw()}if(d.a&&host)apply(d.a)});
- c.on('close',()=>{$('app').innerHTML='<h1>Bağlantı koptu</h1><button class="b" onclick="location.reload()">Başa dön</button>'});
- c.on('error',e=>netmsg('Bağlantı hatası: '+(e&&e.message?e.message:'veri bağlantısı kurulamadı')));
+ c.on('close',()=>{if($('app'))$('app').innerHTML='<h1>Bağlantı koptu</h1><button class="b" onclick="location.reload()">Başa dön</button>'});
+ c.on('error',e=>netmsg('Veri bağlantısı: '+(e&&e.message?e.message:'bağlantı hatası')));
 }
 function mk(){
- if(typeof Peer==='undefined'){netmsg('Bağlantı kütüphanesi yüklenemedi. Sayfayı yenileyip tekrar dene.');return;}
+ if(typeof Peer==='undefined'){lobby('PeerJS yüklenemedi. Sayfayı yenileyip tekrar deneyin.');return;}
  const code=Array.from({length:4},()=>pick('ABCDEFGHJKLMNPQRSTUVWXYZ23456789')).join('');
  host=true;conn=null;netmsg('Oda hazırlanıyor…');
- try{peer=new Peer('bmb-'+code);
+ try{
+  peer=new Peer('bmb-'+code,PEER_OPTIONS);
   peer.on('call',c=>{if(mic){c.answer(mic);hookCall(c)}else pend=c});
-  peer.on('open',()=>{$('app').innerHTML=`<h1>Fitil</h1><div class="card">Oda kodu<div class="ser">${code}</div>Bu kodu arkadaşına gönder.<p id="netmsg" role="status" aria-live="polite">Arkadaşının katılması bekleniyor…</p></div>`});
-  peer.on('connection',c=>{if(conn){c.close();return;}conn=c;hook(c);c.on('open',()=>{round=0;menu()})});
-  peer.on('error',e=>{if(e.type==='unavailable-id'){try{peer.destroy()}catch(_){}mk();return;}netmsg('Oda bağlantı hatası: '+(e.type||e.message||'bilinmeyen hata'));});
- }catch(e){lobby('Oda oluşturulamadı: '+e.message);}
+  peer.on('open',()=>{$('app').innerHTML=`<h1>Fitil</h1><div class="card">Oda kodu<div class="ser">${code}</div>Bu kodu arkadaşına gönder.<p id="netmsg" role="status" aria-live="polite">Oda hazır. Arkadaşının katılması bekleniyor…</p></div>`});
+  peer.on('connection',c=>{if(conn){c.close();return;}conn=c;hook(c);c.on('open',()=>{netmsg('Arkadaşın bağlandı. Oyun başlatılıyor…');round=0;menu()})});
+  peer.on('disconnected',()=>netmsg('Sinyal sunucusu bağlantısı kesildi. Sayfayı yenileyip yeni oda kurun.'));
+  peer.on('error',e=>{if(e&&e.type==='unavailable-id'){try{peer.destroy()}catch(_){}lobby('Bu oda kodu kullanımda. Tekrar “Oda kur” seçeneğine basın.');return;}netmsg(peerErrorText(e))});
+ }catch(e){lobby('Oda oluşturulamadı: '+e.message)}
 }
 function jn(){
  const input=$('code');if(!input)return;
  const code=input.value.trim().toUpperCase().replace(/\s+/g,'');
  if(!/^[ABCDEFGHJKLMNPQRSTUVWXYZ23456789]{4}$/.test(code)){netmsg('Lütfen 4 karakterli oda kodunu eksiksiz gir.');input.focus();return;}
- if(typeof Peer==='undefined'){netmsg('Bağlantı kütüphanesi yüklenemedi. Sayfayı yenileyip tekrar dene.');return;}
+ if(typeof Peer==='undefined'){netmsg('PeerJS yüklenemedi. Sayfayı yenileyip tekrar deneyin.');return;}
  host=false;conn=null;netmsg('Sinyal sunucusuna bağlanılıyor…');
- let roomTimer=null, opened=false;
- const clearRoomTimer=()=>{if(roomTimer){clearTimeout(roomTimer);roomTimer=null;}};
+ let roomTimer=null,opened=false;
+ const clearRoomTimer=()=>{if(roomTimer){clearTimeout(roomTimer);roomTimer=null}};
  try{
-  peer=new Peer(undefined,{
-   host:'0.peerjs.com',port:443,path:'/',secure:true,
-   config:{iceServers:[
-    {urls:'stun:stun.l.google.com:19302'},
-    {urls:'stun:stun1.l.google.com:19302'}
-   ]}
-  });
+  peer=new Peer(undefined,PEER_OPTIONS);
   peer.on('call',c=>{if(mic){c.answer(mic);hookCall(c)}else pend=c});
   peer.on('open',()=>{
-   netmsg('Oda aranıyor… Kod: '+code);
+   netmsg('Sinyal sunucusuna bağlandı; oda aranıyor…');
    conn=peer.connect('bmb-'+code,{reliable:true,serialization:'json'});
    hook(conn);
-   roomTimer=setTimeout(()=>{
-    if(!opened)netmsg('15 saniyede odaya ulaşılamadı. Oda sahibinin sayfası açık mı ve kod doğru mu kontrol edin. İkiniz de sayfayı yenileyip tekrar deneyin.');
-   },15000);
-   conn.on('open',()=>{
-    opened=true;clearRoomTimer();
-    netmsg('Odaya bağlandın. Oyun yükleniyor…');
-   });
-   conn.on('error',e=>{
-    clearRoomTimer();
-    netmsg('Oda bağlantı hatası: '+(e&&e.message?e.message:'bağlantı kurulamadı'));
-   });
-   conn.on('close',()=>{
-    clearRoomTimer();
-    if(!opened)netmsg('Oda bağlantısı kapandı. Oda kodunu ve oda sahibinin bağlantısını kontrol edin.');
-   });
+   roomTimer=setTimeout(()=>{if(!opened){
+    const rtc=conn&&conn.peerConnection;
+    const ice=rtc&&rtc.iceConnectionState?rtc.iceConnectionState:'durum alınamadı';
+    netmsg('Bağlantı zaman aşımına uğradı (ICE: '+ice+'). Oda sahibi sayfayı açık tutup yeni oda kodu oluştursun; iki taraf da sayfayı yenileyip tekrar denesin.');
+   }},25000);
+   conn.on('open',()=>{opened=true;clearRoomTimer();netmsg('Odaya bağlandın. Oyun yükleniyor…')});
+   conn.on('error',e=>{clearRoomTimer();netmsg('Oda bağlantısı: '+(e&&e.message?e.message:'kurulamadı'))});
+   conn.on('close',()=>{clearRoomTimer();if(!opened)netmsg('Oda bağlantısı kapandı. Oda kodunu ve oda sahibinin sayfasını kontrol edin.')});
   });
-  peer.on('disconnected',()=>{
-   if(!opened)netmsg('Sinyal sunucusuyla bağlantı kesildi. Sayfayı yenileyip tekrar deneyin.');
-  });
-  peer.on('error',e=>{
-   clearRoomTimer();
-   const msg=e.type==='peer-unavailable'?'Bu kodla açık bir oda bulunamadı. Oda sahibi yeni oda açıp kodu tekrar göndermeli.':
-    e.type==='network'?'Sinyal sunucusuna ulaşılamıyor. İnternet/VPN/ağ bağlantısını kontrol edin.':
-    e.type==='webrtc'?'WebRTC bağlantısı kurulamadı. Farklı bir internet ağıyla deneyin.':
-    'Bağlantı hatası: '+(e.type||e.message||'bilinmeyen hata');
-   netmsg(msg);
-  });
- }catch(e){clearRoomTimer();netmsg('Bağlantı başlatılamadı: '+e.message);}
+  peer.on('disconnected',()=>{if(!opened)netmsg('PeerJS sinyal sunucusu bağlantısı kesildi. Sayfayı yenileyip tekrar deneyin.')});
+  peer.on('error',e=>{clearRoomTimer();netmsg(peerErrorText(e))});
+ }catch(e){clearRoomTimer();netmsg('Bağlantı başlatılamadı: '+e.message)}
 }
 
 /* Oyun mantığı (sadece oda sahibinde çalışır) */
