@@ -135,27 +135,52 @@ function mk(){
 function jn(){
  const input=$('code');if(!input)return;
  const code=input.value.trim().toUpperCase().replace(/\s+/g,'');
- if(!/^[ABCDEFGHJKLMNPQRSTUVWXYZ23456789]{4}$/.test(code)){netmsg('Lütfen arkadaşının gönderdiği 4 karakterli oda kodunu eksiksiz gir.');input.focus();return;}
+ if(!/^[ABCDEFGHJKLMNPQRSTUVWXYZ23456789]{4}$/.test(code)){netmsg('Lütfen 4 karakterli oda kodunu eksiksiz gir.');input.focus();return;}
  if(typeof Peer==='undefined'){netmsg('Bağlantı kütüphanesi yüklenemedi. Sayfayı yenileyip tekrar dene.');return;}
- host=false;conn=null;netmsg('Sunucuya bağlanılıyor…');
+ host=false;conn=null;netmsg('Sinyal sunucusuna bağlanılıyor…');
+ let roomTimer=null, opened=false;
+ const clearRoomTimer=()=>{if(roomTimer){clearTimeout(roomTimer);roomTimer=null;}};
  try{
-  peer=new Peer();
+  peer=new Peer(undefined,{
+   host:'0.peerjs.com',port:443,path:'/',secure:true,
+   config:{iceServers:[
+    {urls:'stun:stun.l.google.com:19302'},
+    {urls:'stun:stun1.l.google.com:19302'}
+   ]}
+  });
   peer.on('call',c=>{if(mic){c.answer(mic);hookCall(c)}else pend=c});
   peer.on('open',()=>{
-   netmsg('Oda aranıyor…');
-   conn=peer.connect('bmb-'+code,{reliable:true});
+   netmsg('Oda aranıyor… Kod: '+code);
+   conn=peer.connect('bmb-'+code,{reliable:true,serialization:'json'});
    hook(conn);
-   conn.on('open',()=>netmsg('Odaya bağlandın. Oyun yükleniyor…'));
-   conn.on('error',e=>netmsg('Odaya bağlanılamadı: '+(e&&e.message?e.message:'bağlantı hatası')));
-   conn.on('close',()=>netmsg('Oda bağlantısı kapandı. Kodu kontrol edip tekrar dene.'));
+   roomTimer=setTimeout(()=>{
+    if(!opened)netmsg('15 saniyede odaya ulaşılamadı. Oda sahibinin sayfası açık mı ve kod doğru mu kontrol edin. İkiniz de sayfayı yenileyip tekrar deneyin.');
+   },15000);
+   conn.on('open',()=>{
+    opened=true;clearRoomTimer();
+    netmsg('Odaya bağlandın. Oyun yükleniyor…');
+   });
+   conn.on('error',e=>{
+    clearRoomTimer();
+    netmsg('Oda bağlantı hatası: '+(e&&e.message?e.message:'bağlantı kurulamadı'));
+   });
+   conn.on('close',()=>{
+    clearRoomTimer();
+    if(!opened)netmsg('Oda bağlantısı kapandı. Oda kodunu ve oda sahibinin bağlantısını kontrol edin.');
+   });
+  });
+  peer.on('disconnected',()=>{
+   if(!opened)netmsg('Sinyal sunucusuyla bağlantı kesildi. Sayfayı yenileyip tekrar deneyin.');
   });
   peer.on('error',e=>{
-   const msg=e.type==='peer-unavailable'?'Bu kodla açık bir oda bulunamadı. Kodu kontrol et ve oda sahibinden beklemesini iste.':
-    e.type==='network'?'İnternet/sinyalleşme sunucusu bağlantısı kurulamadı.':
+   clearRoomTimer();
+   const msg=e.type==='peer-unavailable'?'Bu kodla açık bir oda bulunamadı. Oda sahibi yeni oda açıp kodu tekrar göndermeli.':
+    e.type==='network'?'Sinyal sunucusuna ulaşılamıyor. İnternet/VPN/ağ bağlantısını kontrol edin.':
+    e.type==='webrtc'?'WebRTC bağlantısı kurulamadı. Farklı bir internet ağıyla deneyin.':
     'Bağlantı hatası: '+(e.type||e.message||'bilinmeyen hata');
    netmsg(msg);
   });
- }catch(e){netmsg('Bağlantı başlatılamadı: '+e.message);}
+ }catch(e){clearRoomTimer();netmsg('Bağlantı başlatılamadı: '+e.message);}
 }
 
 /* Oyun mantığı (sadece oda sahibinde çalışır) */
