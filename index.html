@@ -109,23 +109,54 @@ function mkRules(tl){const C=shuffle(['r','b','y','w']);
  return{w:{tl:tl?1:0,x:pick(['SES','KRK','FRK']),b1:2+rnd(2),c1:C[0],c2:C[1],c3:C[2],p:rnd(2),j:1+rnd(2)},bt:{l:pick(LAB),c:pick('rbyw'),h:rnd(2)},sw:{o:pick([1,3]),p:rnd(2)},
   cols:SYM.map(c=>shuffle(c)),kr:rnd(2),dt:shuffle([0,1,2,3,4,5,6,7,8,9]).slice(0,6),dp:rnd(2),da:pick([3,5,7]),ft:Array.from({length:8},()=>rnd(3)),pm:[0,1,2].map(()=>shuffle([0,1,2,3]).slice(0,2)),gr:{o:rnd(2),p:rnd(2)}}}
 /* Bağlantı */
-function lobby(m){$('app').innerHTML=`<h1>Fitil</h1><p>Biriniz bombayı görür, diğeriniz kılavuzu bilir. Sesli arama açın, konuşun, kesin.</p>
-<div class="card"><button class="b" onclick="mk()">Oda kur</button></div>
-<div class="card">Oda kodu <input id="code" maxlength="4"> <button class="b" onclick="jn()">Katıl</button></div><p>${m||''}</p>`}
+function netmsg(m){const el=$('netmsg');if(el)el.textContent=m;}
+function lobby(m){
+ $('app').innerHTML=`<h1>Fitil</h1><p>Biriniz bombayı görür, diğeriniz kılavuzu bilir. Sesli arama açın, konuşun, kesin.</p>
+ <div class="card"><button class="b" onclick="mk()">Oda kur</button></div>
+ <div class="card">Oda kodu<br><input id="code" maxlength="4" autocomplete="off" autocapitalize="characters" placeholder="ABCD"> <button class="b" onclick="jn()">Katıl</button></div>
+ <p id="netmsg" role="status" aria-live="polite">${m||''}</p>`;
+}
 function hook(c){
  c.on('data',d=>{if(d.menu){S=null;P={};T&&T.reset();pop('');$('app').innerHTML='<h1>Fitil</h1><div class="card">Oda sahibi seviye seçiyor…</div>';return}if(d.s){S=d.s;recv=Date.now();draw()}if(d.a&&host)apply(d.a)});
- c.on('close',()=>{$('app').innerHTML='<h1>Bağlantı koptu</h1><button class="b" onclick="location.reload()">Başa dön</button>'})}
+ c.on('close',()=>{$('app').innerHTML='<h1>Bağlantı koptu</h1><button class="b" onclick="location.reload()">Başa dön</button>'});
+ c.on('error',e=>netmsg('Bağlantı hatası: '+(e&&e.message?e.message:'veri bağlantısı kurulamadı')));
+}
 function mk(){
+ if(typeof Peer==='undefined'){netmsg('Bağlantı kütüphanesi yüklenemedi. Sayfayı yenileyip tekrar dene.');return;}
  const code=Array.from({length:4},()=>pick('ABCDEFGHJKLMNPQRSTUVWXYZ23456789')).join('');
- host=true;peer=new Peer('bmb-'+code);peer.on('call',c=>{if(mic){c.answer(mic);hookCall(c)}else pend=c});
- peer.on('open',()=>$('app').innerHTML=`<h1>Fitil</h1><div class="card">Oda kodu<div class="ser">${code}</div>Bu kodu arkadaşına gönder. Katılmasını bekliyorum.</div>`);
- peer.on('connection',c=>{if(conn)return c.close();conn=c;hook(c);c.on('open',()=>{round=0;menu()})});
- peer.on('error',e=>e.type=='unavailable-id'?mk():lobby('Bağlantı hatası: '+e.type))}
+ host=true;conn=null;netmsg('Oda hazırlanıyor…');
+ try{peer=new Peer('bmb-'+code);
+  peer.on('call',c=>{if(mic){c.answer(mic);hookCall(c)}else pend=c});
+  peer.on('open',()=>{$('app').innerHTML=`<h1>Fitil</h1><div class="card">Oda kodu<div class="ser">${code}</div>Bu kodu arkadaşına gönder.<p id="netmsg" role="status" aria-live="polite">Arkadaşının katılması bekleniyor…</p></div>`});
+  peer.on('connection',c=>{if(conn){c.close();return;}conn=c;hook(c);c.on('open',()=>{round=0;menu()})});
+  peer.on('error',e=>{if(e.type==='unavailable-id'){try{peer.destroy()}catch(_){}mk();return;}netmsg('Oda bağlantı hatası: '+(e.type||e.message||'bilinmeyen hata'));});
+ }catch(e){lobby('Oda oluşturulamadı: '+e.message);}
+}
 function jn(){
- const code=$('code').value.trim().toUpperCase();if(code.length!=4)return;
- host=false;peer=new Peer();peer.on('call',c=>{if(mic){c.answer(mic);hookCall(c)}else pend=c});
- peer.on('open',()=>{conn=peer.connect('bmb-'+code,{reliable:true});hook(conn)});
- peer.on('error',e=>lobby(e.type=='peer-unavailable'?'Oda bulunamadı. Kodu kontrol et.':'Bağlantı hatası: '+e.type))}
+ const input=$('code');if(!input)return;
+ const code=input.value.trim().toUpperCase().replace(/\s+/g,'');
+ if(!/^[ABCDEFGHJKLMNPQRSTUVWXYZ23456789]{4}$/.test(code)){netmsg('Lütfen arkadaşının gönderdiği 4 karakterli oda kodunu eksiksiz gir.');input.focus();return;}
+ if(typeof Peer==='undefined'){netmsg('Bağlantı kütüphanesi yüklenemedi. Sayfayı yenileyip tekrar dene.');return;}
+ host=false;conn=null;netmsg('Sunucuya bağlanılıyor…');
+ try{
+  peer=new Peer();
+  peer.on('call',c=>{if(mic){c.answer(mic);hookCall(c)}else pend=c});
+  peer.on('open',()=>{
+   netmsg('Oda aranıyor…');
+   conn=peer.connect('bmb-'+code,{reliable:true});
+   hook(conn);
+   conn.on('open',()=>netmsg('Odaya bağlandın. Oyun yükleniyor…'));
+   conn.on('error',e=>netmsg('Odaya bağlanılamadı: '+(e&&e.message?e.message:'bağlantı hatası')));
+   conn.on('close',()=>netmsg('Oda bağlantısı kapandı. Kodu kontrol edip tekrar dene.'));
+  });
+  peer.on('error',e=>{
+   const msg=e.type==='peer-unavailable'?'Bu kodla açık bir oda bulunamadı. Kodu kontrol et ve oda sahibinden beklemesini iste.':
+    e.type==='network'?'İnternet/sinyalleşme sunucusu bağlantısı kurulamadı.':
+    'Bağlantı hatası: '+(e.type||e.message||'bilinmeyen hata');
+   netmsg(msg);
+  });
+ }catch(e){netmsg('Bağlantı başlatılamadı: '+e.message);}
+}
 
 /* Oyun mantığı (sadece oda sahibinde çalışır) */
 function newRound(i){
