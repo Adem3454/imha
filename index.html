@@ -87,6 +87,24 @@ const COL={r:'#d63c3c',b:'#2f6fd6',y:'#e8c22e',w:'#f1efe6'};
 const SYM=[['★','☾','♠','♣','♥','♦'],['✿','☂','☎','✂','⚑','♫'],['☢','☯','✈','⚓','☠','✉']];
 const LAB=['İPTAL','TUT','BAS','DUR'];
 let peer,conn,host=false,S=null,recv=0,round=0;
+const ICE={iceServers:[{urls:'stun:stun.l.google.com:19302'},{urls:'stun:stun1.l.google.com:19302'},{urls:'stun:stun.cloudflare.com:3478'},{urls:['turn:eu-0.turn.peerjs.com:3478','turn:us-0.turn.peerjs.com:3478'],username:'peerjs',credential:'peerjsp'}]};
+const ERRS={'network':'Sunucuya ulaşılamıyor. İnternet bağlantını ve güvenlik duvarını kontrol et.','server-error':'Bağlantı sunucusu (PeerJS) cevap vermiyor. Biraz sonra tekrar dene.','socket-error':'Bağlantı sunucusuyla konuşma koptu. Tekrar dene.','socket-closed':'Bağlantı sunucusu bağlantıyı kapattı. Tekrar dene.','peer-unavailable':'Oda bulunamadı. Kodu kontrol et. Oda sahibinin sayfası açık ve ekranı uyanık olmalı.','browser-incompatible':'Bu tarayıcı desteklenmiyor. Güncel Chrome ya da Edge kullan.','webrtc':'Doğrudan bağlantı kurulamadı.','ssl-unavailable':'Güvenli bağlantı kurulamadı.','invalid-id':'Oda kodu geçersiz.'};
+const errTxt=e=>ERRS[e.type]||('Bilinmeyen hata: '+(e.type||e));
+const net=(m,bad)=>{$('app').innerHTML='<h1>Fitil</h1><div class="card">'+m+'</div>'+(bad?'<button class="b" onclick="lobby()">Geri dön</button>':'')};
+async function test(){
+ const o=['Test başladı, 20 saniye sürebilir…'],out=()=>{$('tst').innerHTML=o.join('<br>')};out();const t0=Date.now();
+ try{await new Promise((res,rej)=>{const q=new Peer(undefined,{config:ICE,debug:0}),to=setTimeout(()=>{try{q.destroy()}catch(e){}rej('15 sn içinde cevap yok')},15000);
+  q.on('open',()=>{clearTimeout(to);o.push('Sunucu (PeerJS): ulaşıldı, '+(Date.now()-t0)+' ms');try{q.destroy()}catch(e){}res()});q.on('error',e=>{clearTimeout(to);rej(e.type)})})}
+ catch(e){o.push('Sunucu (PeerJS): ULAŞILAMADI ('+e+')')}
+ out();
+ try{const pc=new RTCPeerConnection(ICE),ty={};pc.createDataChannel('t');
+  pc.onicecandidate=e=>{if(e.candidate){const m=/ typ (\w+)/.exec(e.candidate.candidate);if(m)ty[m[1]]=1}};
+  await pc.setLocalDescription(await pc.createOffer());await new Promise(r=>setTimeout(r,6000));pc.close();
+  o.push('Dış adres bulma (STUN): '+(ty.srflx?'çalışıyor':'bulunamadı'));
+  o.push('Aktarma sunucusu (TURN): '+(ty.relay?'çalışıyor':'bulunamadı, kısıtlı ağlarda bağlantı kurulamayabilir'));
+  o.push('<b>Sonuç:</b> '+(ty.relay?'bağlantı kurma ihtimalin yüksek.':ty.srflx?'çoğu ağda çalışır, bazı kısıtlı ağlarda sorun çıkabilir.':'bu ağda bağlantı zor, mobil veri ya da başka bir ağ dene.'))}
+ catch(e){o.push('Ağ testi çalışmadı: '+e)}
+ out()}
 const rnd=n=>Math.floor(Math.random()*n);
 const pick=a=>a[rnd(a.length)];
 const shuffle=a=>a.map(x=>[Math.random(),x]).sort((p,q)=>p[0]-q[0]).map(p=>p[1]);
@@ -111,29 +129,41 @@ function mkRules(tl){const C=shuffle(['r','b','y','w']);
 /* Bağlantı */
 function lobby(m){$('app').innerHTML=`<h1>Fitil</h1><p>Biriniz bombayı görür, diğeriniz kılavuzu bilir. Sesli arama açın, konuşun, kesin.</p>
 <div class="card"><button class="b" onclick="mk()">Oda kur</button></div>
-<div class="card">Oda kodu <input id="code" maxlength="4"> <button class="b" onclick="jn()">Katıl</button></div><p>${m||''}</p>`}
+<div class="card">Oda kodu <input id="code" maxlength="4"> <button class="b" onclick="jn()">Katıl</button></div><p>${m||''}</p>
+<div class="card"><button class="b" onclick="test()">Bağlantı testi</button> <small>Bağlanamazsanız ikiniz de çalıştırıp sonucu söyleyin.</small><div id="tst"></div></div>`}
 function hook(c){
  c.on('data',d=>{if(d.menu){S=null;P={};T&&T.reset();pop('');$('app').innerHTML='<h1>Fitil</h1><div class="card">Oda sahibi seviye seçiyor…</div>';return}if(d.s){S=d.s;recv=Date.now();draw()}if(d.a&&host)apply(d.a)});
- c.on('close',()=>{$('app').innerHTML='<h1>Bağlantı koptu</h1><button class="b" onclick="location.reload()">Başa dön</button>'})}
-function mk(){
- $('app').innerHTML='<h1>Fitil</h1><div class="card">Oda açılıyor…</div>';
+ c.on('close',()=>{if(c!==conn)return;$('app').innerHTML='<h1>Bağlantı koptu</h1><button class="b" onclick="location.reload()">Başa dön</button>'})}
+function mk(t){
  const code=Array.from({length:4},()=>pick('ABCDEFGHJKLMNPQRSTUVWXYZ23456789')).join('');
- host=true;peer=new Peer('bmb-'+code);peer.on('call',c=>{if(mic){c.answer(mic);hookCall(c)}else pend=c});
- const mkTO=setTimeout(()=>{peer.destroy();lobby('Sunucuya bağlanılamadı. İnterneti kontrol edip tekrar dene.')},10000);
- peer.on('open',()=>{clearTimeout(mkTO);$('app').innerHTML=`<h1>Fitil</h1><div class="card">Oda kodu<div class="ser">${code}</div>Bu kodu arkadaşına gönder. Katılmasını bekliyorum.</div>`});
- peer.on('connection',c=>{if(conn)return c.close();conn=c;hook(c);c.on('open',()=>{round=0;menu()})});
- peer.on('error',e=>{clearTimeout(mkTO);e.type=='unavailable-id'?mk():lobby('Bağlantı hatası: '+e.type)})}
+ host=true;conn=null;net('Sunucuya bağlanılıyor…');
+ peer=new Peer('bmb-'+code,{config:ICE,debug:0});
+ peer.on('call',c=>{if(mic){c.answer(mic);hookCall(c)}else pend=c});
+ const t1=setTimeout(()=>{if(!peer.open){net('Bağlantı sunucusuna (PeerJS) 15 saniyede ulaşılamadı. Sunucu yoğun ya da ağın engelliyor olabilir. Bağlantı testini dene.',1);try{peer.destroy()}catch(e){}}},15000);
+ peer.on('open',()=>{clearTimeout(t1);if(!conn||!conn.open)net('Oda kodu<div class="ser">'+code+'</div>Bu kodu ya da aşağıdaki bağlantıyı arkadaşına gönder.<br><input readonly style="width:100%;margin:8px 0" value="'+location.href.split('#')[0]+'#'+code+'" onclick="this.select()"><small>Oda sahibi olarak bu sayfayı kapatma, ekranın uyanık kalsın.</small>')});
+ peer.on('connection',c=>{
+  if(conn&&conn.open){c.close();return}
+  if(conn){const o=conn;conn=null;try{o.close()}catch(e){}}
+  conn=c;hook(c);
+  const to=setTimeout(()=>{if(!c.open){conn=null;net('Arkadaşın bağlanmaya çalıştı ama doğrudan bağlantı kurulamadı (büyük ihtimalle ağ kısıtı). Tekrar denemesini iste. Oda kodu: <b>'+code+'</b>')}},20000);
+  c.on('open',()=>{clearTimeout(to);round=0;menu()})});
+ peer.on('disconnected',()=>{try{peer.reconnect()}catch(e){}});
+ peer.on('error',e=>{
+  if(e.type=='unavailable-id'&&(t||0)<5){try{peer.destroy()}catch(x){}return mk((t||0)+1)}
+  if(conn&&conn.open)return;clearTimeout(t1);net(errTxt(e),1)})}
 function jn(){
- const code=$('code').value.trim().toUpperCase();
- if(code.length!=4){lobby('4 haneli kodu eksiksiz gir.');return}
- host=false;$('app').innerHTML='<h1>Fitil</h1><div class="card">Odaya bağlanılıyor…</div>';
- peer=new Peer();peer.on('call',c=>{if(mic){c.answer(mic);hookCall(c)}else pend=c});
- const jnTO=setTimeout(()=>{peer.destroy();lobby('Sunucuya bağlanılamadı. İnterneti kontrol edip tekrar dene.')},10000);
- peer.on('open',()=>{conn=peer.connect('bmb-'+code,{reliable:true});
-  const connTO=setTimeout(()=>{if(!conn.open){peer.destroy();lobby('Oda bulunamadı veya bağlantı kurulamadı. Kodu ve internetini kontrol et.')}},10000);
-  conn.on('open',()=>{clearTimeout(jnTO);clearTimeout(connTO);$('app').innerHTML='<h1>Fitil</h1><div class="card">Bağlandın! Oda sahibinin seviye seçmesini bekliyorsun…</div>'});
-  hook(conn)});
- peer.on('error',e=>{clearTimeout(jnTO);lobby(e.type=='peer-unavailable'?'Oda bulunamadı. Kodu kontrol et.':'Bağlantı hatası: '+e.type)})}
+ const code=$('code').value.trim().toUpperCase();if(code.length!=4){lobby('4 haneli oda kodunu gir.');return}
+ host=false;conn=null;net('Sunucuya bağlanılıyor…');
+ peer=new Peer(undefined,{config:ICE,debug:0});
+ peer.on('call',c=>{if(mic){c.answer(mic);hookCall(c)}else pend=c});
+ let done=0;const fail=m=>{if(done)return;done=1;net(m,1);try{peer.destroy()}catch(e){}};
+ const t1=setTimeout(()=>fail('Bağlantı sunucusuna (PeerJS) 15 saniyede ulaşılamadı. Sunucu yoğun ya da ağın engelliyor olabilir. Bağlantı testini dene ya da başka bir ağdan (mobil veri) bağlan.'),15000);
+ peer.on('open',()=>{clearTimeout(t1);net('Odaya bağlanılıyor… Kod: '+code);
+  conn=peer.connect('bmb-'+code,{reliable:true});hook(conn);
+  const t2=setTimeout(()=>{if(!conn.open)fail('Oda bulundu ama doğrudan bağlantı kurulamadı. Büyük ihtimalle ikinizden birinin ağı engelliyor (mobil veri, okul ya da iş ağı, VPN). VPN varsa kapat ya da başka bir ağdan dene. Bağlantı testini ikiniz de çalıştırın.')},20000);
+  conn.on('open',()=>{done=1;clearTimeout(t2);net('Bağlandı. Oda sahibi seviye seçiyor…')});
+  conn.on('error',e=>fail(errTxt(e)))});
+ peer.on('error',e=>{if(conn&&conn.open)return;clearTimeout(t1);fail(errTxt(e))})}
 
 /* Oyun mantığı (sadece oda sahibinde çalışır) */
 function newRound(i){
@@ -143,8 +173,8 @@ function newRound(i){
   w:Array.from({length:4},()=>pick('rbyw')),cut:[0,0,0,0],btn:{c:pick('rbyw'),l:pick(LAB)},
   k:{show:shuffle(sol),sol:R.kr?sol.slice().reverse():sol,n:0},dl:{sym:rnd(6),v:0},fn:{p:rnd(8)},bat:rnd(5),ind:{n:pick(['KRK','SES','FRK']),on:rnd(2)},lp:Array.from({length:4},()=>rnd(2)),sw:[0,0,0,0],ok:Object.fromEntries([...'wbskdflpg'].map(c=>[c,+!m.includes(c)])),st:0,left:(LV[cur].t+MP.t)*1000,run:1,res:''};
  nextBo=Date.now()+15000+rnd(10000);recv=Date.now();sync()}
-function sync(){conn.send({s:S});draw()}
-function act(a){host?apply(a):conn.send({a})}
+function sync(){if(conn&&conn.open)conn.send({s:S});draw()}
+function act(a){host?apply(a):(conn&&conn.open&&conn.send({a}))}
 function apply(a){
  if(!S.run||S.ph&&a.t!='go')return;
  S.left=Math.max(0,left());S.hv=heat();const o0=oks();recv=Date.now();
@@ -227,7 +257,7 @@ let cur=0,PR={u:0,s:[],f:[]};
 try{PR=JSON.parse(localStorage.getItem('fitil'))||PR}catch(e){}
 PR.f=PR.f||[];function savePR(){try{localStorage.setItem('fitil',JSON.stringify(PR))}catch(e){}}
 function unlock(){if(cur>=NL){PR.m=Math.max(PR.m||0,mar+1);savePR();return}PR.u=Math.min(NL-1,Math.max(PR.u,cur+1));PR.s[cur]=Math.max(PR.s[cur]||0,3-S.st);try{localStorage.setItem('fitil',JSON.stringify(PR))}catch(e){}}
-function menu(){S=null;P={};T&&T.reset();pop('');if(conn)conn.send({menu:1});
+function menu(){S=null;P={};T&&T.reset();pop('');if(conn&&conn.open)conn.send({menu:1});
  $('app').innerHTML='<h1>Fitil</h1><p>Bir seviye seç. Bitirdikçe sıradaki açılır, hatasız bitirirsen 3 yıldız alırsın.</p>'+LV.slice(0,NL).map((l,i)=>{const lk=i>PR.u,n=PR.s[i]||0;
   return '<button class="b lv" '+(lk?'disabled':'')+' onclick="newRound('+i+')">'+(i+1)+'. '+l.n+' · '+l.loc+' '+(lk?'🔒':'★'.repeat(n)+'☆'.repeat(3-n))+'<br><small>'+[...l.m].map(c=>MN[c]).join(', ')+' · '+l.t/60+' dk'+(l.bo?' · elektrik kesintisi':'')+(l.hr?' · ısı':'')+'</small></button>'}).join('')+(PR.s[NL-1]?'<button class="b lv" onclick="startMar()">∞ Fitil Maratonu<br><small>Rekor: '+(PR.m||0)+' bomba</small></button>':'')}
 let mp=0,kh=0,kyh=0;
@@ -511,5 +541,5 @@ function stage(){const st=$('stage');if(T)T.build();if(!st||!T)return;let t0=0;
  st.onpointerdown=e=>{const u=T.hit(e);if(!u)return;if(tool=='mm'&&u.t=='w'){$('ro').textContent='Kablo '+(u.i+1)+': '+S.wr[u.i]+' Ω';return}if(u.t=='b'){t0=Date.now();T.press(1);st.setPointerCapture(e.pointerId)}else if(u.t=='kd'){kh=1;act({t:'kd',v:1})}else act(u.t=='w'?{t:'w',i:u.i,pn:tool=='pn'}:u)};
  st.onpointerup=st.onpointercancel=()=>{if(!t0)return;const d=Date.now()-t0;t0=0;T.press(0);act({t:'b',v:d<500?'tap':Math.ceil(left()/1000)%10})}}
 try{if(window.THREE)init3d()}catch(e){}
-lobby();
+lobby();{const h=location.hash.slice(1).toUpperCase();if(/^[A-Z0-9]{4}$/.test(h))$('code').value=h}
 </script></body></html>
