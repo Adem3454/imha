@@ -422,10 +422,10 @@ function init3d(){
  const rc=new THREE.Raycaster(),mv=new THREE.Vector2();
  const hit=e=>{mv.set(e.clientX/innerWidth*2-1,-e.clientY/innerHeight*2+1);rc.setFromCamera(mv,cam);const h=rc.intersectObjects(ft>1?pkb:pk)[0];return h&&h.object.userData};
  const press=on=>{if(btn)btn.position.z=on?.08:.2};
- const lay=t=>{const st=$('stage');panel.visible=!!(st&&S&&S.res!='boom');g.visible=!panel.visible;if(!panel.visible)return;
+ const lay=t=>{const st=$('stage');panel.visible=!!(st&&S&&S.res!='boom');g.visible=!S;if(!panel.visible)return;
   const R=st.getBoundingClientRect(),d=cam.position.z-2.2,u=2*d*Math.tan(.3927)/innerHeight,k=Math.min(R.width/6.6,R.height/5.2)*u;
   panel.position.set((R.left+R.width/2-innerWidth/2)*u,-(R.top+R.height/2-innerHeight/2)*u,2.2);panel.scale.setScalar(k);fl+=(ft-fl)*.15;panel.rotation.set(-.1+Math.sin(t*.6)*.008,fl+Math.sin(t*.5)*.02,0)};
- Object.assign(T,{build,hit,press,flip(){ft=ft?0:Math.PI},theme(h){sc.background.setHex(h.bg);sc.fog.color.setHex(h.bg);dl.color.setHex(h.li);dust.material.color.setHex(h.dc);dvy=h.vy;sc.fog.density=h.fg;setScene(h.sc)},page(){vp^=1;build()},uv(){uvOn^=1;build()},clock:lcd});
+ Object.assign(T,{build,hit,press,flip(){ft=ft?0:Math.PI},theme(h){sc.background.setHex(0x0b1516);sc.fog.color.setHex(0x0b1516);dl.color.setHex(0xffffff);dust.material.color.setHex(0x7fb8b0);dvy=.03;sc.fog.density=.03;setScene(h.sc)},page(){vp^=1;build()},uv(){uvOn^=1;build()},clock:lcd});
  const dec=new THREE.Group();sc.add(dec);let lm=[],anim=[];
  const D=(g,c,x,y,z,e)=>{const m=new THREE.Mesh(g,new THREE.MeshStandardMaterial({color:c,roughness:.8,emissive:e||0}));m.position.set(x,y,z);dec.add(m);return m},Cy=(a,b,h)=>new THREE.CylinderGeometry(a,b,h,12),Bx=(w,h,d)=>new THREE.BoxGeometry(w,h,d);
  const DB={sea:()=>{D(Bx(40,.1,20),0x14506a,0,-3.2,-8);D(Bx(16,.14,3.2),0x5a4632,0,-2.35,-3.5);
@@ -458,9 +458,10 @@ function init3d(){
    for(let i=0;i<4;i++){const g=D(new THREE.ConeGeometry(.12,.4,3),0xeeeeee,0,2,-8);g.rotation.z=Math.PI/2;anim.push(t=>{g.position.set(Math.cos(t*.4+i*1.7)*6,1.5+Math.sin(t*.8+i)*.6+i*.3,-7+Math.sin(t*.4+i*1.7)*2);g.rotation.y=-(t*.4+i*1.7)})}},
   castle:()=>{[-5,5].forEach(x=>{D(Cy(1,1.2,7),0x5a4a38,x,-.5,-5);for(let k=0;k<6;k++)D(Bx(.4,.5,.4),0x5a4a38,x+Math.cos(k/6*6.28),3.2,-5+Math.sin(k/6*6.28))})},
   bridge:()=>{[-5,5].forEach(x=>D(Bx(.5,9,.5),0x6a3a4a,x,0,-5,0x200810));for(let i=0;i<9;i++)D(Bx(.04,5,.04),0xe0c0ff,-4+i,1.5,-5,0x604080).rotation.z=(i-4)*.1}};
+ const grid=new THREE.GridHelper(48,48,0x1d5a54,0x123330);grid.rotation.x=Math.PI/2;grid.position.z=-9;grid.material.transparent=true;grid.material.opacity=.45;sc.add(grid);
  const envCache={};let curK='';
  const loadEnv=k=>{if(!THREE.RGBELoader)return;envCache[k]=null;new THREE.RGBELoader().setDataType(THREE.UnsignedByteType).load('hdri/'+k+'.hdr',tx=>{const e=new THREE.PMREMGenerator(r).fromEquirectangular(tx).texture;tx.dispose();envCache[k]=e;if(curK==k)sc.environment=e},undefined,()=>{})};
- const setScene=k=>{while(dec.children.length)dec.remove(dec.children[0]);lm=[];anim=[];curK=k;sc.environment=envCache[k]||defEnv;if(k&&envCache[k]===undefined)loadEnv(k);if(DB[k])DB[k]()};
+ const setScene=k=>{while(dec.children.length)dec.remove(dec.children[0]);lm=[];anim=[];curK=k;sc.environment=envCache[k]||defEnv;if(k&&envCache[k]===undefined)loadEnv(k);};
  let comp=null;
  try{if(THREE.EffectComposer&&THREE.UnrealBloomPass){const pr=r.getPixelRatio(),rt=new THREE.WebGLMultisampleRenderTarget(innerWidth*pr,innerHeight*pr,{type:THREE.HalfFloatType});rt.samples=4;
   comp=new THREE.EffectComposer(r,rt);comp.addPass(new THREE.RenderPass(sc,cam));comp.addPass(new THREE.UnrealBloomPass(new THREE.Vector2(innerWidth,innerHeight),.3,.4,1.05))}}catch(e){comp=null}
