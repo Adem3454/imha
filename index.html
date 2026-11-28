@@ -2,6 +2,8 @@
 <html lang="tr"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Fitil</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Inter:wght@400;600&family=JetBrains+Mono:wght@700&display=swap" rel="stylesheet">
 <style>
 *{box-sizing:border-box}
 body{margin:0 auto;max-width:520px;padding:16px;background:#2b2f2a;color:#ece8d8;font:16px/1.45 Georgia,serif}
@@ -71,6 +73,35 @@ body{text-shadow:0 1px 3px rgba(0,0,0,.85)}
 .heat{height:10px;background:#1b2a2a;border-radius:5px;overflow:hidden;margin:6px 0}.heat i{display:block;height:100%;width:0;background:linear-gradient(90deg,#d9a441,#ff3b1f)}
 #dk{position:fixed;inset:0;pointer-events:none;z-index:4;display:none;background:radial-gradient(circle 120px at var(--x,50%) var(--y,50%),transparent 0,rgba(0,0,0,.95) 100%)}
 .key{width:100%;padding:18px;font-size:18px;touch-action:none;user-select:none;-webkit-user-select:none}
+
+:root{--teal:#2a9d8f;--brass:#d9a441;--alarm:#ff6b2c;--paper:#e9e2cc}
+body{font-family:Inter,system-ui,'Segoe UI',sans-serif;font-size:16px;line-height:1.5}
+h1,h3,.b,.tab,.lv b,.lv .no,#top{font-family:'Barlow Condensed','Arial Narrow',Inter,sans-serif}
+h1{font-size:56px;font-weight:700;letter-spacing:.2em;text-transform:uppercase;color:var(--brass);margin:10px 0 18px}
+h1::after{content:"";display:block;height:4px;width:60px;margin-top:8px;border-radius:4px;background:linear-gradient(90deg,var(--brass),var(--alarm));box-shadow:0 0 14px var(--alarm);animation:fuse 2.6s ease-in-out infinite alternate}
+@keyframes fuse{to{width:200px}}
+.b{background:linear-gradient(#e8b84f,#c48f2c);color:#1a1409;border:0;border-bottom:3px solid #86601f;border-radius:8px;padding:11px 20px;font-size:17px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;box-shadow:0 6px 14px rgba(0,0,0,.35);transition:transform .08s,filter .15s,box-shadow .15s;cursor:pointer}
+.b:hover{filter:brightness(1.12)}.b:active{transform:translateY(2px);border-bottom-width:1px;box-shadow:0 2px 6px rgba(0,0,0,.4)}.b:disabled{filter:grayscale(1);opacity:.4}
+input{font:700 28px 'JetBrains Mono',ui-monospace,monospace;letter-spacing:.3em;width:150px;border:1px solid rgba(42,157,143,.5);background:#0a1415;border-radius:8px}
+input:focus{outline:0;box-shadow:0 0 0 3px rgba(42,157,143,.35)}
+.card{background:linear-gradient(rgba(20,40,42,.84),rgba(11,22,24,.84));border:1px solid rgba(42,157,143,.35);border-radius:14px;box-shadow:0 12px 30px rgba(0,0,0,.4),inset 0 1px 0 rgba(255,255,255,.06)}
+.man{background:var(--paper);border:1px solid #b9ad88;box-shadow:0 12px 30px rgba(0,0,0,.45),inset 0 0 40px rgba(120,90,40,.18)}
+.man h3{font-size:26px;letter-spacing:.06em;text-transform:uppercase;border-bottom:2px solid #8a6d2f;padding-bottom:4px}
+.man li::marker{color:#8a6d2f;font-weight:700}
+.tab{font-size:17px;letter-spacing:.05em;text-transform:uppercase;border-radius:8px 8px 0 0;transition:background .15s}.tab:hover{background:#1f4140}
+#top{background:linear-gradient(#233636,#122020);border:1px solid rgba(217,164,65,.6);border-radius:12px;padding:8px 16px;font-size:20px;letter-spacing:.08em;text-transform:uppercase}
+#clock,.ser{font-family:'JetBrains Mono',ui-monospace,monospace}
+#clock{font-size:40px;border-radius:8px;box-shadow:inset 0 0 14px #000,0 0 18px rgba(255,107,44,.25)}
+.lv{display:grid;grid-template-columns:62px 1fr auto;column-gap:14px;align-items:center;width:100%;margin:10px 0;padding:12px 16px;text-align:left;color:#e9e2cc;background:linear-gradient(rgba(20,42,44,.9),rgba(11,24,26,.9));border:1px solid rgba(42,157,143,.4);border-left:5px solid var(--teal);border-radius:12px;cursor:pointer;line-height:1.35;box-shadow:0 8px 20px rgba(0,0,0,.35);transition:transform .12s,border-color .15s,box-shadow .15s}
+.lv:hover:not(:disabled){transform:translateX(4px);border-left-color:var(--brass);box-shadow:0 10px 26px rgba(0,0,0,.5)}
+.lv .no{grid-row:1/4;font-size:44px;font-weight:700;color:var(--teal);text-align:center}
+.lv b{font-size:24px;letter-spacing:.06em;text-transform:uppercase}
+.lv .st{color:var(--brass);letter-spacing:2px;grid-column:3;grid-row:1}.lv .st u{text-decoration:none;color:#3a4a48}
+.lv small{grid-column:2/4;opacity:.8}
+.lv .chips{grid-column:2/4;display:flex;gap:6px;margin-top:4px}
+.lv .chips i{font-style:normal;width:28px;height:28px;display:grid;place-items:center;border-radius:7px;background:#0d1d1f;border:1px solid rgba(42,157,143,.5);font-size:15px;color:var(--teal)}
+.lv.lock{opacity:.45;border-left-color:#3a4a48}.lv.lock .no{color:#4a5a58}
+.lv.mar{border-left-color:var(--alarm)}.lv.mar .no{color:var(--alarm)}
 </style></head><body><div id="flash"></div><div id="dk"></div><div id="vg"></div><div id="app"></div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/shaders/CopyShader.js"></script>
@@ -257,9 +288,10 @@ let cur=0,PR={u:0,s:[],f:[]};
 try{PR=JSON.parse(localStorage.getItem('fitil'))||PR}catch(e){}
 PR.f=PR.f||[];function savePR(){try{localStorage.setItem('fitil',JSON.stringify(PR))}catch(e){}}
 function unlock(){if(cur>=NL){PR.m=Math.max(PR.m||0,mar+1);savePR();return}PR.u=Math.min(NL-1,Math.max(PR.u,cur+1));PR.s[cur]=Math.max(PR.s[cur]||0,3-S.st);try{localStorage.setItem('fitil',JSON.stringify(PR))}catch(e){}}
+const MI={w:'〰',b:'◉',s:'⇅',k:'✦',d:'◔',f:'☼',l:'⚿',p:'≈',g:'⚙'};
 function menu(){S=null;P={};T&&T.reset();pop('');if(conn&&conn.open)conn.send({menu:1});
  $('app').innerHTML='<h1>Fitil</h1><p>Bir seviye seç. Bitirdikçe sıradaki açılır, hatasız bitirirsen 3 yıldız alırsın.</p>'+LV.slice(0,NL).map((l,i)=>{const lk=i>PR.u,n=PR.s[i]||0;
-  return '<button class="b lv" '+(lk?'disabled':'')+' onclick="newRound('+i+')">'+(i+1)+'. '+l.n+' · '+l.loc+' '+(lk?'🔒':'★'.repeat(n)+'☆'.repeat(3-n))+'<br><small>'+[...l.m].map(c=>MN[c]).join(', ')+' · '+l.t/60+' dk'+(l.bo?' · elektrik kesintisi':'')+(l.hr?' · ısı':'')+'</small></button>'}).join('')+(PR.s[NL-1]?'<button class="b lv" onclick="startMar()">∞ Fitil Maratonu<br><small>Rekor: '+(PR.m||0)+' bomba</small></button>':'')}
+  return '<button class="lv'+(lk?' lock':'')+'" '+(lk?'disabled':'')+' onclick="newRound('+i+')"><span class="no">'+(i+1)+'</span><b>'+l.n+'</b><span class="st">'+(lk?'🔒':'★'.repeat(n)+'<u>'+'★'.repeat(3-n)+'</u>')+'</span><small>'+l.loc+' · '+l.t/60+' dk'+(l.bo?' · kesinti':'')+(l.hr?' · ısı':'')+'</small><span class="chips">'+[...l.m].map(c=>'<i title="'+MN[c]+'">'+MI[c]+'</i>').join('')+'</span></button>'}).join('')+(PR.s[NL-1]?'<button class="lv mar" onclick="startMar()"><span class="no">∞</span><b>Fitil Maratonu</b><small>Rekor: '+(PR.m||0)+' bomba</small></button>':'')}
 let mp=0,kh=0,kyh=0;
 const rel=()=>{if(kh){kh=0;act({t:'kd',v:0})}if(kyh){kyh=0;act({t:'ky',v:0})}};
 addEventListener('pointerup',rel);addEventListener('pointercancel',rel);
@@ -271,9 +303,12 @@ const pipeSvg=R=>{const vc=['#d63c3c','#2f6fd6','#e8c22e','#f1efe6'];return '<sv
 const why=()=>S.bw=='h'?'Neden: üç hata birikti ('+S.sl.join(', ')+').':S.bw=='i'?'Neden: kasa aşırı ısındı, modül çözerek ısıyı düşürmeliydiniz.':'Neden: süre doldu. Çözülmeyen: '+[...S.mods].filter(c=>!S.ok[c]).map(c=>MN[c]).join(', ')+'.';
 const PG=['Genel','Kablolar','Düğme','Şalterler','Semboller','Kadran','Fener','Çift anahtar','Sarnıç boruları','Dişliler'];
 function manual(){
+ const nm=o=>[...S.mods].filter(c=>o[c]).map(c=>o[c]).join(', ');
+ const fr=nm({w:'kablolar',b:'düğme',s:'şalterler',k:'semboller',l:'kilit düğmesi'}),bk=nm({d:'kadran',f:'fener'}),ak=nm({p:'sarnıç boruları',g:'dişliler'});
+ const loc='Ön yüzde '+fr+' ve üstteki şeritte sayaç, hata ve durum lambaları var. Arka yüzde seri no, piller ve gösterge lambası (KRK, SES ya da FRK; yanık ya da sönük)'+(bk?' ile '+bk:'')+' bulunur.'+(ak?' Alt kapakta '+ak+' var.':'')+' Arkadaşından bombayı çevirmesini iste.';
  const R=S.R,w=R.w,b=R.bt,L=a=>'<ol>'+a.map(x=>'<li>'+x+'</li>').join('')+'</ol>',T2=a=>'<table>'+a.map(r=>'<tr><td>'+r[0]+'</td><td>'+r[1]+'</td></tr>').join('')+'</table>';
  const pg=[
-  '<p>Kılavuz sürümü <b>'+S.id+'</b>: her turda kurallar değişir, eski turdan ezber yok. Bombanın ön yüzünde kablolar, düğme, semboller, şalterler ve durum lambaları; arka yüzünde seri no, piller, gösterge lambası (KRK, SES ya da FRK; yanık ya da sönük) ve seviyeye göre kadran ile fener bulunur. Arkadaşından bombayı çevirmesini iste.</p><p>Bütün modüller çözülünce bomba durur. Her hata saati hızlandırır, 3. hatada bomba patlar. Her biriniz tur başına bir kez joker kullanabilirsiniz.</p>',
+  '<p>Kılavuz sürümü <b>'+S.id+'</b>: her turda kurallar değişir, eski turdan ezber yok.</p><p>'+loc+'</p><p>Bütün modüller çözülünce bomba durur. Her hata saati %'+Math.round(S.pen*100)+' hızlandırır, 3. hatada bomba patlar. Her biriniz tur başına bir kez joker kullanabilirsiniz.</p>',
   '<p>4 kablo var. Kuralları sırayla dene, ilk uyan geçerli.'+(LV[S.lv].pn?' Kalın, parlak (örgülü) kablolar yalnızca pense ile kesilir, elle denersen hata sayılır.':'')+'</p>'+L((w.tl?['Üzerinde mor ışıkta işaret görünen kablo varsa (UV fener): onu kes.']:[]).concat(['Pil sayısı '+w.b1+' veya daha fazla ve '+w.x+' dışındaki gösterge lambası yanıksa: son kabloyu kes.','Birden fazla '+CN[w.c1]+' kablo var ve seri no son rakamı '+PW[w.p]+'se: son '+CN[w.c1]+' kabloyu kes.','Son kablo '+CN[w.c2]+' ve hiç '+CN[w.c1]+' kablo yoksa: ilk kabloyu kes.','Tam olarak bir '+CN[w.c3]+' kablo varsa: ilk kabloyu kes.','Birden fazla '+CN[w.c2]+' kablo varsa: son kabloyu kes.',(w.tl?'Hiçbiri uymazsa: multimetreyle ölç, direnci en yüksek kabloyu kes.':'Hiçbiri uymazsa: '+(w.j+1)+'. kabloyu kes.')])),
   L(['Yazı '+b.l+' ise: hızlıca bas ve bırak (yarım saniyeden kısa).','Düğme '+CN[b.c]+' ise: hızlıca bas ve bırak.','Diğer durumlarda: basılı tut. Sayaçta saniyenin son hanesi '+(b.h?'seri no son rakamı ile pil sayısının toplamının son hanesine':'seri no son rakamına')+' eşit olduğunda bırak.']),
   '<p>4 şalter ve üstlerinde 4 lamba var, şalterlerin hepsi aşağıda başlar. Her şalter '+(R.sw.o==1?'kendisinin sağındaki lambaya bakar (4. şalter için 1. lamba)':'kendisinin solundaki lambaya bakar (1. şalter için 4. lamba)')+'. O lamba yanıyorsa şalter yukarıda, sönükse aşağıda olmalı. Seri no son rakamı '+PW[R.sw.p]+' ise bütün sonuçları tersine çevir. Ayarlayınca ONAY tuşuna bas.</p>',
@@ -284,7 +319,7 @@ function manual(){
   '<p>Sarnıçta 3 sızıntı lambası ve 4 vana (kırmızı, mavi, sarı, beyaz) var. Şemada her sızıntıdan iki vanaya boru gider. Yanan her sızıntının vanalarını KAPAT, geri kalan bütün vanalar AÇIK kalsın. Vanalara dokunarak durumu çevir, sonra KONTROL tuşuna bas. Bu modül bombanın Alt kapağında.</p>'+pipeSvg(R),
   '<p>Dişlilerin üzerinde diş sayısı yazar. Dişlilere sırayla dokunmalısın: '+(R.gr.o?'en çok dişliden en aza':'en az dişliden en çoğa')+'. Seri no son rakamı '+PW[R.gr.p]+' ise sırayı tersine çevir. Yanlış dişli seriyi baştan başlatır. Bu modül Alt kapakta.</p>'
  ];
- const ix=[0,...[...'wbskdflpg'].map((c,i)=>S.mods.includes(c)?[1,2,4,3,5,6,7,8,9][i]:-1).filter(i=>i>0)].sort((a,b)=>a-b);if(!ix.includes(mp))mp=0;
+ const ix=[0,...[...'wbskdflpg'].map((c,i)=>S.mods.includes(c)?[1,2,3,4,5,6,7,8,9][i]:-1).filter(i=>i>0)].sort((a,b)=>a-b);if(!ix.includes(mp))mp=0;
  return '<div class="tabs">'+ix.map(i=>'<button class="tab'+(i==mp?' on':'')+'" onclick="mp='+i+';draw()">'+PG[i]+'</button>').join('')+'</div>'+opp()+(S.mods.includes('l')?`<button class="b key" onpointerdown="kyh=1;act({t:'ky',v:1})" oncontextmenu="return false">${S.kd?'Arkadaşın basıyor: sen de BAS':'Anahtarı basılı tut'}</button>`:'')+'<div class="card man"><h3>'+PG[mp]+'</h3>'+pg[mp]+'</div>'}
 /* Ses */
 let ac;
@@ -362,7 +397,7 @@ function init3d(){
  add(new THREE.CylinderGeometry(.05,.05,.9,8),M(0xc9b88a,0,.9),.25,2.35,0,-.5);
  sc.add(new THREE.HemisphereLight(0xbfc8d8,0x222018,.55));
  const dl=new THREE.DirectionalLight(0xffffff,.6);dl.position.set(3,4,5);dl.castShadow=true;dl.shadow.mapSize.set(2048,2048);dl.shadow.bias=-.001;dl.shadow.normalBias=.03;dl.shadow.camera.left=-3.5;dl.shadow.camera.right=3.5;dl.shadow.camera.top=3.5;dl.shadow.camera.bottom=-3.5;dl.shadow.camera.updateProjectionMatrix();sc.add(dl);
- const pl=new THREE.PointLight(0xff3b1f,1,12);pl.position.set(0,0,3.5);sc.add(pl);
+ const pl=new THREE.PointLight(0xff3b1f,1,12);pl.position.set(0,0,3.5);sc.add(pl);const kl=new THREE.PointLight(0xffe2b8,.8,14);kl.position.set(-3.5,3.5,6);sc.add(kl);const rl=new THREE.PointLight(0x2a9d8f,.7,14);rl.position.set(4,-2.5,4);sc.add(rl);
  const N=260,sp=new Float32Array(N*3),sv=[],spg=new THREE.BufferGeometry();
  for(let i=0;i<N;i++)sv.push({l:Math.random(),x:0,y:0,z:0});
  spg.setAttribute('position',new THREE.BufferAttribute(sp,3));
@@ -379,14 +414,18 @@ function init3d(){
   reset(){if(T.theme)T.theme(DEF);ft=0;vp=0;bm.visible=true;bt=-1;bmat.opacity=0;ring.material.opacity=0;dark.emissive.setHex(0);pl.color.setHex(0xff3b1f);flash=0}};
  /* Etkileşimli 3D bomba paneli */
  const panel=new THREE.Group();sc.add(panel);let pk=[],pkb=[],btn=null,md='',pgv=0,vp=0;
- const tex=(t,w,h,fg,bg,fs)=>{const c=document.createElement('canvas');c.width=w;c.height=h;const x=c.getContext('2d');if(bg){x.fillStyle=bg;x.fillRect(0,0,w,h)}x.fillStyle=fg;x.font='bold '+fs+'px sans-serif';x.textAlign='center';x.textBaseline='middle';x.fillText(t,w/2,h/2);return new THREE.CanvasTexture(c)};
+ const tex=(t,w,h,fg,bg,fs)=>{const c=document.createElement('canvas');c.width=w*2;c.height=h*2;const x=c.getContext('2d');x.scale(2,2);if(bg){x.fillStyle=bg;x.fillRect(0,0,w,h)}x.fillStyle=fg;x.font='700 '+fs+'px "Barlow Condensed","Arial Narrow",sans-serif';x.textAlign='center';x.textBaseline='middle';x.fillText(t,w/2,h/2);const tx=new THREE.CanvasTexture(c);tx.anisotropy=8;return tx};
  const B=(w,h,d)=>new THREE.BoxGeometry(w,h,d),col=(c,e)=>new THREE.MeshStandardMaterial({color:c,metalness:.05,roughness:.65,envMapIntensity:.5,emissive:e||0}),ghost=new THREE.MeshBasicMaterial({transparent:true,opacity:0,depthWrite:false});
  const A=(geo,mat,x,y,z,u)=>{const m=new THREE.Mesh(geo,mat);m.position.set(x,y,z||0);m.mod=md;m.pg=pgv;if(u){m.userData=u;pk.push(m)}m.castShadow=m.receiveShadow=mat!==ghost;panel.add(m);return m};
  const pl2=(t,w,h,x,y,z)=>A(new THREE.PlaneGeometry(w,h),new THREE.MeshBasicMaterial({map:t,transparent:true}),x,y,z);
  const mt=(()=>{const c=document.createElement('canvas');c.width=c.height=512;const x=c.getContext('2d');x.fillStyle='#808080';x.fillRect(0,0,512,512);
   for(let i=0;i<900;i++){x.strokeStyle='rgba('+(Math.random()<.5?'255,255,255':'0,0,0')+','+Math.random()*.25+')';x.lineWidth=Math.random()*1.5;x.beginPath();const a=Math.random()*512,b=Math.random()*512;x.moveTo(a,b);x.lineTo(a+Math.random()*60,b+Math.random()*4-2);x.stroke()}
   const t=new THREE.CanvasTexture(c);t.wrapS=t.wrapT=THREE.RepeatWrapping;return t})();
- const pmat=new THREE.MeshStandardMaterial({color:0x142224,metalness:.55,roughness:.5,envMapIntensity:.7});
+ const gr=(()=>{const c=document.createElement('canvas');c.width=c.height=256;const x=c.getContext('2d');x.fillStyle='#e6e6e6';x.fillRect(0,0,256,256);
+  for(let i=0;i<2200;i++){x.fillStyle='rgba(255,255,255,'+Math.random()*.12+')';x.fillRect(Math.random()*256,Math.random()*256,Math.random()*40+4,1)}
+  for(let i=0;i<1500;i++){x.fillStyle='rgba(0,0,0,'+Math.random()*.1+')';x.fillRect(Math.random()*256,Math.random()*256,Math.random()*30+4,1)}
+  const t=new THREE.CanvasTexture(c);t.wrapS=t.wrapT=THREE.RepeatWrapping;t.repeat.set(3,3);return t})();
+ const pmat=new THREE.MeshStandardMaterial({color:0x142224,metalness:.55,roughness:.55,roughnessMap:gr,envMapIntensity:.7});
  let pc=[0,0,0,0],ft=0,fl=0,lamp=null,gears=[],dvy=0,uvOn=0;
  const caseGeo=(w,h,r)=>{const sh=new THREE.Shape(),x=-w/2,y=-h/2;sh.moveTo(x+r,y);sh.lineTo(x+w-r,y);sh.quadraticCurveTo(x+w,y,x+w,y+r);sh.lineTo(x+w,y+h-r);sh.quadraticCurveTo(x+w,y+h,x+w-r,y+h);sh.lineTo(x+r,y+h);sh.quadraticCurveTo(x,y+h,x,y+h-r);sh.lineTo(x,y+r);sh.quadraticCurveTo(x,y,x+r,y);return new THREE.ExtrudeGeometry(sh,{depth:.3,bevelEnabled:true,bevelThickness:.08,bevelSize:.08,bevelSegments:4,curveSegments:8})};
  const hz=()=>{const c=document.createElement('canvas');c.width=256;c.height=16;const x=c.getContext('2d');x.fillStyle='#d9a441';x.fillRect(0,0,256,16);x.fillStyle='#15120e';for(let i=-16;i<272;i+=32){x.beginPath();x.moveTo(i,16);x.lineTo(i+16,16);x.lineTo(i+32,0);x.lineTo(i+16,0);x.fill()}return new THREE.CanvasTexture(c)};
@@ -395,7 +434,7 @@ function init3d(){
   A(B(w,.03,.03),tl,x,y+h/2,.09);A(B(w,.03,.03),tl,x,y-h/2,.09);A(B(.03,h,.03),tl,x-w/2,y,.09);A(B(.03,h,.03),tl,x+w/2,y,.09);
   if(t)pl2(tex(t,256,48,'#2a9d8f',null,30),lw,lw/5.4,x+dx,y+dy,.1)};
  const lcC=document.createElement('canvas');lcC.width=256;lcC.height=96;const lcX=lcC.getContext('2d'),lcT=new THREE.CanvasTexture(lcC);
- const lcd=(txt,low)=>{lcX.fillStyle='#120a06';lcX.fillRect(0,0,256,96);lcX.fillStyle=low?'#ff2a1a':'#ff7a2c';lcX.font='bold 74px monospace';lcX.textAlign='center';lcX.textBaseline='middle';lcX.fillText(txt,128,52);lcT.needsUpdate=true};
+ const lcd=(txt,low)=>{lcX.fillStyle='#120a06';lcX.fillRect(0,0,256,96);lcX.fillStyle=low?'#ff2a1a':'#ff7a2c';lcX.font='700 74px "JetBrains Mono",monospace';lcX.textAlign='center';lcX.textBaseline='middle';lcX.fillText(txt,128,52);lcT.needsUpdate=true};
  const gear=(n,r)=>{const sh=new THREE.Shape(),m=n*2;for(let i=0;i<m;i++){const a=i/m*Math.PI*2,rr=i%2?r:r*1.18;sh[i?'lineTo':'moveTo'](Math.cos(a)*rr,Math.sin(a)*rr)}sh.closePath();return new THREE.ExtrudeGeometry(sh,{depth:.15,bevelEnabled:false})};
  const build=()=>{
   while(panel.children.length)panel.remove(panel.children[0]);pk=[];pkb=[];lamp=null;btn=null;md='';gears=[];pgv=0;
@@ -410,18 +449,23 @@ function init3d(){
   const AB=(geo,mat,x,y,z,u)=>{const m=new THREE.Mesh(geo,mat);m.position.set(x,y,z||0);m.mod=md;m.castShadow=m.receiveShadow=true;if(u){m.userData=u;pkb.push(m)}bk.add(m);return m};
   const pb=(t,w,h,x,y,z)=>{const m=new THREE.Mesh(new THREE.PlaneGeometry(w,h),new THREE.MeshBasicMaterial({map:t,transparent:true}));m.position.set(x,y,z||.17);m.mod=md;bk.add(m)};
   const bx=(w,h)=>B(w,h,.15),dk=col(0x15120e),lbl=(x,y,w,h,t,c,f)=>pb(tex(t,128,64,c||'#e9e2cc',null,f||40),w,h,x,y);
-  pb(tex(S.ser,256,64,'#ece8d8','#15120e',46),2.8,.65,-1.6,2.05,.02);
-  AB(bx(1.5,.6),col(S.ind.on?0xffd24a:0x3a3a30,S.ind.on?0xb07800:0),2.2,2.05,.08);lbl(2.2,2.05,.9,.45,S.ind.n,S.ind.on?'#1d1d16':'#8a8a78',34);
-  AB(bx(2,.8),dk,-2,1.3,.08);
-  for(let i=0;i<S.bat;i++){AB(new THREE.CylinderGeometry(.15,.15,.55,16),col(0x2c5b8a),-2.7+i*.45,1.3,.3);AB(new THREE.CylinderGeometry(.07,.07,.1,12),col(0xd9a441),-2.7+i*.45,1.62,.3)}
-  md='d';AB(bx(2.3,1.2),dk,-1.9,-.05,.08);
-  pb(tex(DG[S.dl.sym],128,128,'#ffd24a',null,84),1,1,-2.5,-.05);pb(tex(String(S.dl.v),128,128,'#7bd88f',null,96),1,1,-1.3,-.05);
-  AB(bx(.8,.6),col(0xd9a441),-2.3,-1.2,.08,{t:'d',i:1});lbl(-2.3,-1.2,.5,.3,'▲','#1d1d16');
-  AB(bx(.8,.6),col(0xd9a441),-1.5,-1.2,.08,{t:'d',i:-1});lbl(-1.5,-1.2,.5,.3,'▼','#1d1d16');
-  AB(bx(1.7,.5),col(S.ok.d?0x7bc47f:0x8a6d2f),-1.9,-2,.08,{t:'dc'});lbl(-1.9,-2,1,.5,S.ok.d?'✔':'MÜHÜR','#1d1d16',28);
-  md='f';lamp=AB(new THREE.SphereGeometry(.4,24,16),col(0x4a4a3c),1.6,0,.3);
-  ['r','b','y'].forEach((c,i)=>AB(bx(.75,.75),col(COL[c]),.6+i,-1.4,.08,{t:'f',i}));md='';
-  [[-3.1,2.4],[3.1,2.4],[-3.1,-2.4],[3.1,-2.4]].forEach(([x,y])=>A(new THREE.SphereGeometry(.12,16,12),col(0xaaa898),x,y,.1));
+  const znb=(x,y,w,h,t,dx,dy,lw)=>{AB(bx(w,h),col(0x0f2123),x,y,.06);AB(B(w,.03,.03),tl,x,y+h/2,.09);AB(B(w,.03,.03),tl,x,y-h/2,.09);AB(B(.03,h,.03),tl,x-w/2,y,.09);AB(B(.03,h,.03),tl,x+w/2,y,.09);if(t)pb(tex(t,256,48,'#2a9d8f',null,30),lw,lw/5.4,x+dx,y+dy,.17)};
+  znb(-1.5,2,3,.8,'SERİ NO',-.9,.31,.9);pb(tex(S.ser,256,64,'#ece8d8','#15120e',46),2.3,.52,-1.5,1.9,.17);
+  znb(2.05,2,2,.8,'GÖSTERGE',-.5,.31,.9);
+  AB(new THREE.CylinderGeometry(.27,.27,.08,24).rotateX(Math.PI/2),col(0xb08a3a),1.5,1.9,.14);
+  AB(new THREE.CylinderGeometry(.2,.2,.12,24).rotateX(Math.PI/2),col(S.ind.on?0xffd24a:0x3a3a30,S.ind.on?0xb07800:0),1.5,1.9,.2);
+  lbl(2.35,1.9,.9,.45,S.ind.n,S.ind.on?'#ffd24a':'#8a8a78',34);
+  znb(-2,1,2.2,1,'PİL',-.55,.37,.6);
+  for(let i=0;i<S.bat;i++){const x=-2.75+i*.5;AB(new THREE.CylinderGeometry(.15,.15,.55,16),col(0x1f3b5c),x,.95,.3);AB(new THREE.CylinderGeometry(.15,.15,.1,16),col(0xd9a441),x,1.15,.3);AB(new THREE.CylinderGeometry(.06,.06,.1,12),col(0xd9a441),x,1.26,.3)}
+  md='d';znb(-1.9,-1,2.6,2.85,'KADRAN',-.7,1.22,.9);AB(bx(2.3,1.1),dk,-1.9,-.45,.08);
+  pb(tex(DG[S.dl.sym],128,128,'#ffd24a',null,84),1,1,-2.5,-.45);pb(tex(String(S.dl.v),128,128,'#7bd88f',null,96),1,1,-1.3,-.45);
+  AB(bx(.8,.6),col(0xd9a441),-2.3,-1.5,.08,{t:'d',i:1});lbl(-2.3,-1.5,.5,.3,'▲','#1d1d16');
+  AB(bx(.8,.6),col(0xd9a441),-1.5,-1.5,.08,{t:'d',i:-1});lbl(-1.5,-1.5,.5,.3,'▼','#1d1d16');
+  AB(bx(1.7,.45),col(S.ok.d?0x7bc47f:0x8a6d2f),-1.9,-2.1,.08,{t:'dc'});lbl(-1.9,-2.1,1,.5,S.ok.d?'✔':'MÜHÜR','#1d1d16',28);
+  md='f';znb(1.6,-1,2.8,2.85,'FENER',-.8,1.22,.9);lamp=AB(new THREE.SphereGeometry(.4,24,16),col(0x4a4a3c),1.6,-.15,.3);
+  ['r','b','y'].forEach((c,i)=>AB(bx(.75,.75),col(COL[c]),.6+i,-1.55,.08,{t:'f',i}));md='';
+  [[-3.1,2.4],[3.1,2.4],[-3.1,-2.4],[3.1,-2.4]].forEach(([x,y],i)=>{A(new THREE.CylinderGeometry(.13,.13,.06,20).rotateX(Math.PI/2),col(0xb08a3a),x,y,.11);A(B(.2,.03,.02),col(0x15120e),x,y,.145).rotation.z=i*.7+.3});
+  [[0xd63c3c,0],[0x2a9d8f,.1],[0xd9a441,.2]].forEach(([c,o])=>A(new THREE.TubeGeometry(new THREE.CatmullRomCurve3([new THREE.Vector3(2.95+o*.5,2.55,.12),new THREE.Vector3(3.05+o*.4,2.1,.18),new THREE.Vector3(3.14+o*.2,1.2,.16),new THREE.Vector3(3.15+o*.1,.4,.12)]),24,.045,8),col(c),0,0,0));
   
   md='w';zn(-1.6,.5,3.1,2.3,'KABLOLAR',-.7,.98,1.2);
   S.w.forEach((c,i)=>{const y=1.2-i*.45,m=col(COL[c]),cy=(l,r)=>{const g=new THREE.CylinderGeometry(r||.11,r||.11,l,12);g.rotateZ(Math.PI/2);return g};
@@ -442,15 +486,15 @@ function init3d(){
   A(B(.9,.5,.2),col(S.ok.s?0x7bc47f:0xd9a441),.7,-1.85,.1,{t:'sc'});pl2(tex(S.ok.s?'✔':'ONAY',128,48,'#1d1d16',null,32),.8,.3,.7,-1.85,.22);
   md='l';zn(2.2,-1.9,1.9,.9,'');A(B(1.8,.5,.2),col(S.ky?0xffb000:0x7a1f1f,S.ky?0x703800:0),2.2,-1.9,.1,{t:'kd'});pl2(tex(S.ok.l?'✔':'KİLİT',128,64,'#fff',null,30),1,.5,2.2,-1.9,.22);
   md='';[...S.mods].map(c=>S.ok[c]).forEach((o,i)=>A(new THREE.SphereGeometry(.08,12,10),col(o?0x3cff7a:0x3a3a30,o?0x20c050:0),1+i*.22,2.28,.1));
-  md='p';pgv=1;
+  md='p';pgv=1;zn(-1.5,.1,3.2,3.6,'SARNIÇ BORULARI',-.7,1.62,1.5);
   A(new THREE.CylinderGeometry(.12,.12,3,12).rotateZ(Math.PI/2),col(0x2c5b8a),-1.5,0,.1);
-  S.pp.lk.forEach((l,k)=>A(new THREE.SphereGeometry(.16,16,12),col(l?0xffd24a:0x4a4a3c,l?0xb07800:0),-2.4+k*.9,1.6,.1));
+  S.pp.lk.forEach((l,k)=>A(new THREE.SphereGeometry(.16,16,12),col(l?0xffd24a:0x4a4a3c,l?0xb07800:0),-2.4+k*.9,1.3,.1));
   ['r','b','y','w'].forEach((c,i)=>{const x=-2.6+i*.8,cl=S.pp.vv[i];
    A(new THREE.CylinderGeometry(.34,.34,.2,24).rotateX(Math.PI/2),col(COL[c]),x,0,.15,{t:'v',i});
    A(B(.7,.1,.1),col(0x222222),x,0,.3).rotation.z=cl?Math.PI/2:0;
    A(new THREE.SphereGeometry(.06,10,8),col(cl?0xd63c3c:0x3cff7a,cl?0x701010:0x108030),x,.55,.15)});
   A(B(1.5,.5,.2),col(S.ok.p?0x7bc47f:0xd9a441),-1.5,-1.5,.1,{t:'vc'});pl2(tex(S.ok.p?'✔':'KONTROL',128,64,'#1d1d16',null,24),1,.5,-1.5,-1.5,.22);
-  md='g';
+  md='g';zn(1.75,.15,3,3.5,'DİŞLİLER',-.7,1.58,1.2);
   S.gr.tt.forEach((n,i)=>{const x=1+(i%2)*1.5,y=1-(i>>1)*1.7,done=S.gr.n>0&&grSol(S.gr.tt,+S.ser.slice(-1),S.R.gr).slice(0,S.gr.n).includes(i);
    gears.push(A(gear(n,.15+n*.025),col(done?0x7bc47f:0xb08a3a,done?0x2a7a30:0),x,y,.1,{t:'gr',i}));pl2(tex(String(n),64,64,'#1d1d16',null,34),.45,.45,x,y,.32)});
   md='';pgv=0;
@@ -542,4 +586,5 @@ function stage(){const st=$('stage');if(T)T.build();if(!st||!T)return;let t0=0;
  st.onpointerup=st.onpointercancel=()=>{if(!t0)return;const d=Date.now()-t0;t0=0;T.press(0);act({t:'b',v:d<500?'tap':Math.ceil(left()/1000)%10})}}
 try{if(window.THREE)init3d()}catch(e){}
 lobby();{const h=location.hash.slice(1).toUpperCase();if(/^[A-Z0-9]{4}$/.test(h))$('code').value=h}
+if(document.fonts&&document.fonts.ready)document.fonts.ready.then(()=>{if(T&&S&&T.build)T.build()});
 </script></body></html>
